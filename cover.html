@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html class="light" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>【印刷用】表紙 4月号（縦書き再修正版） | 企業名</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;family=Noto+Sans+JP:wght@400;500;700;900&amp;family=Zen+Old+Mincho:wght@500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2E7D32", // Deep green suitable for print
+                        "primary-dark": "#1b5e20",
+                        "accent-pink": "#ffb7c5",
+                        "text-main": "#1a1a1a",
+                        "paper": "#fdfbf7",
+                    },
+                    fontFamily: {
+                        "sans": ["Noto Sans JP", "sans-serif"],
+                        "serif": ["Zen Old Mincho", "serif"],
+                        "display": ["Lexend", "sans-serif"],
+                    },
+                    aspectRatio: {
+                        'a4': '210 / 297',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .writing-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        .text-shadow-print {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        }.text-shadow-outline {
+            text-shadow: 
+                2px 2px 0 #ffffff, -2px -2px 0 #ffffff, 
+                2px -2px 0 #ffffff, -2px 2px 0 #ffffff,
+                0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-200 min-h-screen flex items-center justify-center p-4 sm:p-8 font-serif">
+<div class="relative bg-white w-full max-w-[210mm] aspect-a4 shadow-2xl overflow-hidden flex flex-col mx-auto">
+<div class="absolute inset-0 z-0">
+<img alt="Cherry blossoms with soft sunlight" class="w-full h-full object-cover object-center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyTarG3zwa0segh0VyLuOgj6sYN3LMRs8X7QJj_0qpr9j7zBDD9B5pGCGDeQ_0w2KuQ_ksFK1r1-7d1X8rVS3OhL0O9KOZiil5E6MOQKMuo6x_fHBvK60ApIv72mhzSsH_yJGOayV9465Cju0GW_ExDQZc7S0_0I4iDvru1Dilfz1taN2UfNSCOQkUbGM4EMx_MXzXPthS0VB4UXwfIbbD4aqILFkMrrfSOdtKmylpunthBg_FfdVGqloQRgx8hYgGFM0wBmINJB0"/>
+<div class="absolute inset-0 bg-gradient-to-b from-white/95 via-white/20 to-transparent h-[40%]"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent h-[40%] bottom-0 top-auto"></div>
+</div>
+<div class="relative z-10 flex flex-col h-full p-[12mm] sm:p-[15mm]">
+<header class="flex justify-between items-start border-b-4 border-primary pb-6 mb-8">
+<div class="flex flex-col">
+<div class="flex items-center gap-2 mb-2 text-primary">
+<span class="material-symbols-outlined text-[28px]">spa</span>
+<span class="text-sm font-bold tracking-widest uppercase font-sans">広報誌</span>
+</div>
+<h1 class="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-none">
+                        アイウエオ<br/>
+<span class="text-2xl sm:text-3xl font-bold text-gray-700 block mt-1">カキクケコセンター</span>
+</h1>
+</div>
+<div class="flex flex-col items-end">
+
+<div class="flex items-baseline leading-none text-primary">
+<span class="text-6xl sm:text-7xl font-black font-display mr-1">4</span>
+<span class="text-xl font-bold">月号</span>
+</div>
+<span class="text-sm font-bold text-gray-500 mt-1">2026 April / Vol.04</span>
+</div>
+</header>
+<div class="flex-grow relative">
+<div class="absolute right-0 sm:right-6 top-8 h-auto flex flex-col gap-6 writing-vertical z-20 select-none items-start">
+<h2 class="font-serif font-black text-6xl sm:text-6xl text-primary tracking-widest leading-none text-shadow-outline">
+                        新しい一歩、
+                    </h2>
+<h2 class="font-serif font-black text-6xl sm:text-6xl text-primary tracking-widest leading-none text-shadow-outline">
+                        ここから。
+                    </h2>
+</div>
+</div>
+<div class="mt-auto bg-white/95 backdrop-blur-md p-6 sm:p-8 border-l-8 border-primary shadow-xl">
+<div class="flex items-center gap-3 mb-5 border-b border-gray-200 pb-3">
+<span class="bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">特集</span>
+<span class="text-lg font-bold text-gray-800 font-sans">あなたの悩みを解消します</span>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<div class="flex gap-4 items-start">
+<div class="flex-shrink-0 mt-1">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent-pink/20 text-pink-600 font-bold">01</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-gray-900 font-serif mb-1">坊っちゃん坊っちゃん坊っちゃん</h3>
+<p class="text-sm text-gray-600 font-sans leading-relaxed">
+  親譲の無鉄砲で小供の時から損ばかりしている。小学校に居る時分学校の二階から飛び降りて一週間ほど腰を抜かした事がある。
+                            </p>
+</div>
+</div>
+<div class="flex gap-4 items-start">
+<div class="flex-shrink-0 mt-1">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">02</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-gray-900 font-serif mb-1">坊っちゃん坊っちゃん坊っちゃん</h3>
+<p class="text-sm text-gray-600 font-sans leading-relaxed">
+  なぜそんな無闇をしたと聞く人があるかも知れぬ。別段深い理由でもない。新築の二階から首を出していたら、同級生の一人が冗談に、
+  いくら威張っても、そこから飛び降りる事は出来まい。
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-6 flex justify-between items-end text-white/90 text-xs font-sans font-medium text-shadow-print">
+<p>発行：夏目漱石</p>
+<p>坊っちゃん坊っちゃん坊っちゃん | www.xxxxxxxxx.co.jp</p>
+</div>
+</div>
+</div>
+
+</body></html>
