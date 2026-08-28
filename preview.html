@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>就労定着支援 面談用報告</title>
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --text:#1f2937;
+    --muted:#667085;
+    --line:#d9e0ea;
+    --accent:#3157a4;
+    --accent-soft:#eaf0ff;
+    --good:#157347;
+    --good-soft:#e9f7ef;
+    --note:#8a6116;
+    --note-soft:#fff6dc;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+    line-height:1.65;
+  }
+  main{max-width:980px;margin:32px auto;padding:0 20px 48px}
+  .hero{
+    background:linear-gradient(135deg,#203c78,#4269b4);
+    color:#fff;border-radius:18px;padding:28px 30px;
+    box-shadow:0 10px 28px rgba(25,42,80,.16);
+  }
+  .hero h1{margin:0 0 6px;font-size:28px;line-height:1.3}
+  .hero p{margin:0;color:#e8edfa}
+  .section{margin-top:24px}
+  h2{font-size:20px;margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px;box-shadow:0 3px 10px rgba(30,50,80,.04)
+  }
+  .label{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+  .value{font-size:18px;font-weight:800;margin-top:5px}
+  .sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .good{color:var(--good)}
+  .timeline{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 20px}
+  .tl-item{display:grid;grid-template-columns:160px 18px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid #edf0f5}
+  .tl-item:last-child{border-bottom:none}
+  .date{font-weight:700;font-size:14px}
+  .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);margin-top:7px;position:relative}
+  .dot:after{content:"";position:absolute;width:2px;height:46px;background:#cbd5e1;left:5px;top:12px}
+  .tl-item:last-child .dot:after{display:none}
+  .tl-title{font-weight:800}
+  .current{background:var(--accent-soft);border-radius:8px;padding:1px 7px;color:var(--accent);font-size:12px;font-weight:700;margin-left:8px}
+  .future{background:#f2f4f7;border-radius:8px;padding:1px 7px;color:#475467;font-size:12px;font-weight:700;margin-left:8px}
+  .health{
+    display:grid;grid-template-columns:1fr 1fr;gap:16px
+  }
+  .metric-row{display:grid;grid-template-columns:95px 1fr 48px;align-items:center;gap:10px;margin:10px 0}
+  .bar{height:9px;background:#eef1f5;border-radius:99px;overflow:hidden}
+  .fill{height:100%;background:#6684c4;border-radius:99px}
+  .insight{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px
+  }
+  .insight ul{margin:8px 0 0;padding-left:20px}
+  .insight li{margin:6px 0}
+  .notice{
+    background:var(--note-soft);border:1px solid #f2d68c;border-radius:12px;padding:13px 16px;
+    color:#62470f;font-size:14px
+  }
+  .summary{
+    background:var(--good-soft);border:1px solid #bfe5cf;border-radius:14px;padding:18px 20px
+  }
+  .summary strong{color:var(--good)}
+  .talk{margin:8px 0 0;padding-left:20px}
+  .talk li{margin:7px 0}
+  footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:right}
+  @media(max-width:760px){
+    .grid{grid-template-columns:1fr 1fr}
+    .health{grid-template-columns:1fr}
+    .tl-item{grid-template-columns:115px 16px 1fr;gap:8px}
+  }
+  @media print{
+    body{background:#fff}
+    main{max-width:none;margin:0;padding:0}
+    .hero,.card,.timeline,.insight,.summary{box-shadow:none}
+    .section{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <h1>就労定着支援 面談用報告</h1>
+    <p>就業開始から現在までの状況整理 ｜ 2026年7月1日〜8月28日</p>
+  </header>
+
+  <section class="section">
+    <h2>1. 現在の状況</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="label">業務</div>
+        <div class="value good">特に難しい点なし</div>
+        <div class="sub">これまでの仕事と大きな違いはなく、現時点では対応できている。</div>
+      </div>
+      <div class="card">
+        <div class="label">困りごと</div>
+        <div class="value good">現時点ではなし</div>
+        <div class="sub">業務上・生活上とも、支援が必要な具体的課題はまだ出ていない。</div>
+      </div>
+      <div class="card">
+        <div class="label">勤怠</div>
+        <div class="value good">問題なし</div>
+        <div class="sub">遅刻等を避けるため、基本的に30分前行動をしている。</div>
+      </div>
+      <div class="card">
+        <div class="label">人間関係</div>
+        <div class="value good">問題なし</div>
+        <div class="sub">現状は周囲との接点自体が多くなく、対人面での問題は起きていない。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>2. 就業経過</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="date">7/1〜7/8</div><div class="dot"></div>
+        <div><span class="tl-title">会社研修</span><div class="sub">入社後の会社研修。</div></div>
+      </div>
+      <div class="tl-item">
+        <div class="date">7/9〜7/15</div><div class="dot"></div>
+        <div><span class="tl-title">部署研修</span><div class="sub">配属部署での研修。</div></div>
+      </div>
+      <div class="tl-item">
+        <div class="date">7/15〜7/22</div><div class="dot"></div>
+        <div><span class="tl-title">待機期間</span><div class="sub">案件参画前の待機。</div></div>
+      </div>
+      <div class="tl-item">
+        <div class="date">7/23〜8/7</div><div class="dot"></div>
+        <div><span class="tl-title">部署内の短期テスト案件</span><div class="sub">小規模なテスト業務を担当。</div></div>
+      </div>
+      <div class="tl-item">
+        <div class="date">8/10〜8/31</div><div class="dot"></div>
+        <div><span class="tl-title">別部署のテスト案件</span><span class="current">現在</span>
+          <div class="sub">現時点で業務上の大きな難しさや困りごとはない。</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="date">9/1〜2027/2予定</div><div class="dot"></div>
+        <div><span class="tl-title">長期案件へ参画</span><span class="future">予定</span>
+          <div class="sub">今後は長期案件での継続勤務に移る予定。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>3. 体調・メンタル観測ログから見える傾向</h2>
+    <div class="health">
+      <div class="card">
+        <div class="label">7月平均</div>
+        <div class="metric-row"><span>気分</span><div class="bar"><div class="fill" style="width:51.9%"></div></div><b>5.19</b></div>
+        <div class="metric-row"><span>身体調子</span><div class="bar"><div class="fill" style="width:55.5%"></div></div><b>5.55</b></div>
+        <div class="metric-row"><span>疲労感</span><div class="bar"><div class="fill" style="width:61.3%"></div></div><b>6.13</b></div>
+        <div class="metric-row"><span>集中力</span><div class="bar"><div class="fill" style="width:46.1%"></div></div><b>4.61</b></div>
+        <div class="sub">※疲労感は高いほど負荷が強い項目。</div>
+      </div>
+      <div class="card">
+        <div class="label">8月1日〜28日平均</div>
+        <div class="metric-row"><span>気分</span><div class="bar"><div class="fill" style="width:53.9%"></div></div><b>5.39</b></div>
+        <div class="metric-row"><span>身体調子</span><div class="bar"><div class="fill" style="width:57.9%"></div></div><b>5.79</b></div>
+        <div class="metric-row"><span>疲労感</span><div class="bar"><div class="fill" style="width:48.6%"></div></div><b>4.86</b></div>
+        <div class="metric-row"><span>集中力</span><div class="bar"><div class="fill" style="width:53.9%"></div></div><b>5.39</b></div>
+        <div class="sub">7月と比べ、疲労感は低下し、集中力は上昇。</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:14px">
+      <ul>
+        <li><strong>7月20日前後：</strong>気分・集中力などに一時的な低下があり、ログにも「メンタルダウン時期が始まった」と記録。</li>
+        <li><strong>その後：</strong>低下は長期化せず、7月末〜8月にかけて回復。</li>
+        <li><strong>8月8〜9日：</strong>出社・新しい案件への不安による一時的な気分変化を記録。</li>
+        <li><strong>8月10日の案件加入後：</strong>大きな崩れは見られず、直近では気分・身体調子・集中力などがおおむね安定している。</li>
+      </ul>
+    </div>
+
+    <div class="notice" style="margin-top:14px">
+      観測ログは自己記録であり、医学的評価ではありません。面談では「一時的な波はあったが、勤怠への影響はなく、現在は安定して勤務できている」という説明材料として使う想定です。
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>4. 資格・取り組み</h2>
+    <div class="card">
+      <div class="value">会社指定の資格を取得</div>
+      <div class="sub">昇給に必要な資格のため、まず必要なものを取得した。業務と並行して社内評価・キャリア面の準備も進めている。</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>5. 面談で伝える要点</h2>
+    <div class="summary">
+      <strong>現在は、就業継続上の大きな問題はない。</strong>
+      <ul class="talk">
+        <li>研修・待機・短期案件・別部署案件と環境は変化しているが、仕事自体はこれまでの経験と大きく変わらず、特に難しさは感じていない。</li>
+        <li>勤怠は問題なく、30分前行動を継続している。</li>
+        <li>人間関係上のトラブルはない。現時点では周囲との関わりは比較的少ない。</li>
+        <li>体調面には一時的な波があったものの、勤務への影響はなく、現在は落ち着いている。</li>
+        <li>9月から長期案件へ移るため、今後は「長期案件開始後の業務負荷・通勤・人間関係・体調の変化」を確認していきたい。</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    作成日：2026年8月28日 ｜ 観測ログ集計対象：2026年7月1日〜8月28日
+  </footer>
+</main>
+</body>
+</html>
