@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>作業時間ログ</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #fff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #dde2e8;
+      --primary: #1f5f99;
+      --primary2: #174872;
+      --danger: #b42318;
+      --ok: #067647;
+      --soft: #eef4f9;
+      --shadow: 0 8px 24px rgba(15, 23, 42, .07)
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit
+    }
+
+    button {
+      cursor: pointer
+    }
+
+    header {
+      max-width: 1440px;
+      margin: auto;
+      padding: 26px 20px 10px
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px
+    }
+
+    .lead {
+      margin: 6px 0 0;
+      color: var(--muted)
+    }
+
+    main {
+      max-width: 1440px;
+      margin: auto;
+      padding: 10px 20px 44px;
+      display: grid;
+      gap: 16px
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px
+    }
+
+    .metric,
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow)
+    }
+
+    .metric {
+      padding: 15px
+    }
+
+    .metric .label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted)
+    }
+
+    .metric .value {
+      font-size: 27px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(320px, 1fr) minmax(290px, .8fr);
+      gap: 16px;
+      align-items: start
+    }
+
+    .card {
+      padding: 18px
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 19px
+    }
+
+    .side {
+      position: sticky;
+      top: 12px
+    }
+
+    .timer {
+      display: grid;
+      place-items: center;
+      padding: 25px 12px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #edf5fb, #fff);
+      border: 1px solid #cfe0ee;
+      margin-bottom: 14px
+    }
+
+    .time {
+      font: 800 clamp(40px, 5vw, 62px)/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .02em
+    }
+
+    .status {
+      margin-top: 7px;
+      font-weight: 750;
+      color: var(--muted)
+    }
+
+    .status.running {
+      color: var(--ok)
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 750;
+      margin: 11px 0 5px
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 11px;
+      background: #fff;
+      color: var(--text)
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      padding: 10px 14px
+    }
+
+    button:hover {
+      background: var(--primary2)
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed
+    }
+
+    .ghost {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line)
+    }
+
+    .ghost:hover {
+      background: #f8fafc
+    }
+
+    .danger {
+      background: var(--danger)
+    }
+
+    .small {
+      padding: 6px 9px;
+      font-size: 12px
+    }
+
+    .settings-box {
+      margin-top: 20px;
+      padding-top: 17px;
+      border-top: 1px solid var(--line)
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 5px 0 0
+    }
+
+    .notice {
+      margin-top: 12px;
+      background: #f7fafc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #475467;
+      font-size: 13px
+    }
+
+    .day-total {
+      font-size: 32px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      margin: 2px 0 12px
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 8px
+    }
+
+    .breakdown-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfcfd
+    }
+
+    .breakdown-name {
+      font-weight: 750;
+      overflow-wrap: anywhere
+    }
+
+    .breakdown-time {
+      font: 800 15px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace
+    }
+
+    .running-note {
+      font-size: 12px;
+      color: var(--ok);
+      font-weight: 700;
+      margin-top: 8px
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: end;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .toolbar>div {
+      min-width: 170px
+    }
+
+    .table-wrap {
+      margin-top: 12px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px
+    }
+
+    table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+      background: #fff
+    }
+
+    th,
+    td {
+      padding: 10px 11px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      text-align: left;
+      vertical-align: top
+    }
+
+    th {
+      background: #f8fafc;
+      white-space: nowrap;
+      color: #344054
+    }
+
+    tr:last-child td {
+      border-bottom: 0
+    }
+
+    .right {
+      text-align: right
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-variant-numeric: tabular-nums
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: #244f73;
+      font-weight: 800;
+      font-size: 12px
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    @media(max-width:1050px) {
+      .workspace {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .side {
+        position: static;
+        grid-column: 1/-1
+      }
+
+      .breakdown {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+    }
+
+    @media(max-width:700px) {
+
+      .summary,
+      .workspace,
+      .row {
+        grid-template-columns: 1fr
+      }
+
+      .side {
+        grid-column: auto
+      }
+
+      .breakdown {
+        grid-template-columns: 1fr
+      }
+
+      header,
+      main {
+        padding-left: 12px;
+        padding-right: 12px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>作業時間ログ</h1>
+    <p class="lead">作業時間を打刻または手入力で記録し、日別・作業区分別に確認できます。</p>
+  </header>
+  <main>
+    <section class="summary" aria-label="集計">
+      <div class="metric">
+        <div class="label">表示月の合計</div>
+        <div class="value" id="monthTotal">0:00</div>
+      </div>
+      <div class="metric">
+        <div class="label">本日の合計</div>
+        <div class="value" id="todayTotal">0:00</div>
+      </div>
+      <div class="metric">
+        <div class="label">表示月の作業件数</div>
+        <div class="value" id="entryCount">0</div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="card">
+        <h2>かんたん打刻</h2>
+        <div class="timer">
+          <div class="time" id="liveTimer">00:00:00</div>
+          <div class="status" id="timerStatus">停止中</div>
+        </div>
+        <label for="taskSelect">作業区分</label><select id="taskSelect"></select>
+        <label for="memoInput">メモ</label><textarea id="memoInput" placeholder="例：打合せ、資料作成など"></textarea>
+        <div class="actions"><button id="startBtn">開始</button><button id="stopBtn" class="danger"
+            disabled>終了して記録</button><button id="cancelBtn" class="ghost" disabled>打刻を破棄</button></div>
+        <div class="notice">記録内容はこのブラウザの localStorage に保存されます。必要に応じてJSONバックアップを保存してください。</div>
+      </div>
+
+      <div class="card">
+        <h2>手入力で追加</h2>
+        <div class="row">
+          <div><label for="manualDate">日付</label><input id="manualDate" type="date"></div>
+          <div><label for="manualTask">作業区分</label><select id="manualTask"></select></div>
+        </div>
+        <div class="row">
+          <div><label for="manualStart">開始時刻</label><input id="manualStart" type="time"></div>
+          <div><label for="manualEnd">終了時刻</label><input id="manualEnd" type="time"></div>
+        </div>
+        <label for="manualMemo">メモ</label><textarea id="manualMemo" placeholder="後から追加する場合はこちら"></textarea>
+        <div class="actions"><button id="manualAddBtn">手入力を追加</button></div>
+
+        <div class="settings-box">
+          <h2>作業区分設定</h2>
+          <label for="taskSettings">プルダウンに表示する作業区分</label>
+          <textarea id="taskSettings" placeholder="1行に1区分"></textarea>
+          <p class="hint">1行に1区分を入力してください。保存すると、打刻側と手入力側の両方のプルダウンへ反映されます。</p>
+          <div class="actions"><button id="saveTaskSettingsBtn" class="ghost">作業区分を保存</button></div>
+        </div>
+      </div>
+
+      <aside class="card side">
+        <h2>日別・区分別時間</h2>
+        <label for="daySummaryDate">集計日</label><input id="daySummaryDate" type="date">
+        <div class="hint">手入力の日付を変更すると、この集計日も連動します。</div>
+        <label>その日の合計</label>
+        <div class="day-total" id="dayTotal">0:00</div>
+        <div class="breakdown" id="dayBreakdown"></div>
+        <div class="running-note hidden" id="runningNote">進行中の打刻時間も仮集計に含めています。</div>
+      </aside>
+    </section>
+
+    <section class="card">
+      <h2>作業ログ</h2>
+      <div class="toolbar">
+        <div><label for="monthFilter">表示月</label><input id="monthFilter" type="month"></div>
+        <div><label for="keywordFilter">区分・メモ検索</label><input id="keywordFilter" type="search" placeholder="キーワード">
+        </div>
+        <button id="exportCsvBtn" class="ghost">CSV保存</button>
+        <button id="copySummaryBtn" class="ghost">月次サマリをコピー</button>
+        <button id="backupBtn" class="ghost">JSONバックアップ</button>
+        <button id="restoreBtn" class="ghost">JSON復元</button>
+        <input id="restoreFile" type="file" accept="application/json,.json" class="hidden">
+        <button id="clearAllBtn" class="danger">全削除</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>開始</th>
+              <th>終了</th>
+              <th>作業区分</th>
+              <th class="right">時間</th>
+              <th>メモ</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="emptyMessage">まだ記録がありません。</p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const STORAGE_KEY = 'a_lab_time_tracker_entries_v1';
+      const TIMER_KEY = 'a_lab_time_tracker_active_timer_v1';
+      const CATEGORY_KEY = 'work_time_tracker_categories_v2';
+      const DEFAULT_CATEGORIES = ['QA', 'エビデンス', 'チケット対応', 'その他'];
+      const $ = id => document.getElementById(id);
+      let entries = loadJson(STORAGE_KEY, []);
+      let activeTimer = loadJson(TIMER_KEY, null);
+      let categories = loadCategories();
+
+      function loadJson(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback } catch { return fallback } }
+      function loadCategories() {
+        const saved = loadJson(CATEGORY_KEY, null);
+        if (Array.isArray(saved) && saved.length) return normalizeCategories(saved);
+        const fromEntries = entries.map(e => e.task).filter(Boolean);
+        return normalizeCategories([...DEFAULT_CATEGORIES, ...fromEntries]);
+      }
+      function normalizeCategories(list) { return [...new Set(list.map(v => String(v).trim()).filter(Boolean))] }
+      function saveAll() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); localStorage.setItem(CATEGORY_KEY, JSON.stringify(categories)); activeTimer ? localStorage.setItem(TIMER_KEY, JSON.stringify(activeTimer)) : localStorage.removeItem(TIMER_KEY) }
+      function pad(n) { return String(n).padStart(2, '0') }
+      function localDate(d = new Date()) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
+      function currentMonth() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}` }
+      function timeValue(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}` }
+      function durationText(minutes) { minutes = Math.max(0, Math.floor(Number(minutes) || 0)); return `${Math.floor(minutes / 60)}:${pad(minutes % 60)}` }
+      function secondsText(sec) { sec = Math.max(0, Math.floor(sec)); return `${pad(Math.floor(sec / 3600))}:${pad(Math.floor((sec % 3600) / 60))}:${pad(sec % 60)}` }
+      function calcMinutes(sd, st, ed, et) { return Math.max(0, Math.round((new Date(`${ed}T${et}:00`) - new Date(`${sd}T${st}:00`)) / 60000)) }
+      function uid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(16).slice(2)}` }
+      function esc(v) { return String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;') }
+      function runningMinutesForDate(date) { if (!activeTimer || activeTimer.startDate !== date) return 0; return Math.max(0, Math.floor((Date.now() - new Date(activeTimer.startISO).getTime()) / 60000)) }
+
+      function refreshCategoryControls() {
+        const currentTask = $('taskSelect').value;
+        const currentManual = $('manualTask').value;
+        const options = categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        $('taskSelect').innerHTML = options; $('manualTask').innerHTML = options;
+        if (categories.includes(currentTask)) $('taskSelect').value = currentTask;
+        if (categories.includes(currentManual)) $('manualTask').value = currentManual;
+        $('taskSettings').value = categories.join('\n');
+      }
+      function saveTaskSettings() {
+        const next = normalizeCategories($('taskSettings').value.split(/\r?\n/));
+        if (!next.length) { alert('作業区分を1つ以上設定してください。'); return }
+        categories = next; saveAll(); refreshCategoryControls(); render();
+      }
+      function startTimer() { if (activeTimer) return; const n = new Date(); activeTimer = { startISO: n.toISOString(), startDate: localDate(n), startTime: timeValue(n), task: $('taskSelect').value, memo: $('memoInput').value.trim() }; saveAll(); render() }
+      function stopTimer() { if (!activeTimer) return; const end = new Date(); const min = Math.max(1, Math.round((end - new Date(activeTimer.startISO)) / 60000)); entries.push({ id: uid(), date: activeTimer.startDate, start: activeTimer.startTime, endDate: localDate(end), end: timeValue(end), task: activeTimer.task, memo: activeTimer.memo, minutes: min, createdAt: new Date().toISOString() }); activeTimer = null; $('memoInput').value = ''; saveAll(); render() }
+      function cancelTimer() { if (activeTimer && confirm('進行中の打刻を破棄しますか？')) { activeTimer = null; saveAll(); render() } }
+      function addManual() {
+        const date = $('manualDate').value, start = $('manualStart').value, end = $('manualEnd').value, task = $('manualTask').value, memo = $('manualMemo').value.trim();
+        if (!date || !start || !end) { alert('日付・開始時刻・終了時刻を入力してください。'); return }
+        let endDate = date, minutes = calcMinutes(date, start, endDate, end);
+        if (minutes <= 0) { if (!confirm('終了時刻が開始時刻より前です。日をまたいだ作業として登録しますか？')) return; const d = new Date(`${date}T00:00:00`); d.setDate(d.getDate() + 1); endDate = localDate(d); minutes = calcMinutes(date, start, endDate, end) }
+        entries.push({ id: uid(), date, start, endDate, end, task, memo, minutes, createdAt: new Date().toISOString() }); $('manualStart').value = ''; $('manualEnd').value = ''; $('manualMemo').value = ''; $('daySummaryDate').value = date; saveAll(); render();
+      }
+      function deleteEntry(id) { if (confirm('この記録を削除しますか？')) { entries = entries.filter(e => e.id !== id); saveAll(); render() } }
+      function duplicateEntry(id) { const t = entries.find(e => e.id === id); if (t) { entries.push({ ...t, id: uid(), createdAt: new Date().toISOString() }); saveAll(); render() } }
+      window.deleteEntry = deleteEntry; window.duplicateEntry = duplicateEntry;
+
+      function filteredEntries() { const m = $('monthFilter').value, k = $('keywordFilter').value.trim().toLowerCase(); return entries.filter(e => (!m || e.date.startsWith(m)) && (!k || `${e.task} ${e.memo}`.toLowerCase().includes(k))).sort((a, b) => `${b.date}T${b.start}`.localeCompare(`${a.date}T${a.start}`)) }
+      function render() { renderTimer(); renderTable(); renderSummary(); renderDaySummary() }
+      function renderTimer() { const r = !!activeTimer; $('startBtn').disabled = r; $('stopBtn').disabled = !r; $('cancelBtn').disabled = !r; $('timerStatus').textContent = r ? `記録中：${activeTimer.task} / 開始 ${activeTimer.startTime}` : '停止中'; $('timerStatus').classList.toggle('running', r) }
+      function renderTable() { const rows = filteredEntries(); $('logBody').innerHTML = rows.map(e => { const endLabel = e.endDate && e.endDate !== e.date ? `${esc(e.end)}（翌日）` : esc(e.end); return `<tr><td class="mono">${esc(e.date)}</td><td class="mono">${esc(e.start)}</td><td class="mono">${endLabel}</td><td><span class="pill">${esc(e.task)}</span></td><td class="right mono">${durationText(e.minutes)}</td><td>${esc(e.memo)}</td><td><button class="small ghost" onclick="duplicateEntry('${esc(e.id)}')">複製</button> <button class="small danger" onclick="deleteEntry('${esc(e.id)}')">削除</button></td></tr>` }).join(''); $('emptyMessage').classList.toggle('hidden', rows.length > 0) }
+      function renderSummary() { const rows = filteredEntries(); const monthTotal = rows.reduce((s, e) => s + Number(e.minutes || 0), 0); const today = localDate(); let todayTotal = entries.filter(e => e.date === today).reduce((s, e) => s + Number(e.minutes || 0), 0) + runningMinutesForDate(today); $('monthTotal').textContent = durationText(monthTotal); $('todayTotal').textContent = durationText(todayTotal); $('entryCount').textContent = String(rows.length) }
+      function renderDaySummary() {
+        const date = $('daySummaryDate').value || localDate(); const map = new Map();
+        entries.filter(e => e.date === date).forEach(e => map.set(e.task, (map.get(e.task) || 0) + Number(e.minutes || 0)));
+        const running = activeTimer && activeTimer.startDate === date ? runningMinutesForDate(date) : 0; if (running) map.set(activeTimer.task, (map.get(activeTimer.task) || 0) + running);
+        const ordered = [...categories, ...[...map.keys()].filter(k => !categories.includes(k))];
+        const rows = ordered.map(c => [c, map.get(c) || 0]).filter(([, m]) => m > 0);
+        const total = rows.reduce((s, [, m]) => s + m, 0); $('dayTotal').textContent = durationText(total);
+        $('dayBreakdown').innerHTML = rows.length ? rows.map(([c, m]) => `<div class="breakdown-row"><div class="breakdown-name">${esc(c)}</div><div class="breakdown-time">${durationText(m)}</div></div>`).join('') : '<div class="empty">この日の記録はありません。</div>';
+        $('runningNote').classList.toggle('hidden', !running);
+      }
+      function tick() { if (activeTimer) { const sec = Math.max(0, Math.floor((Date.now() - new Date(activeTimer.startISO).getTime()) / 1000)); $('liveTimer').textContent = secondsText(sec) } else $('liveTimer').textContent = '00:00:00'; renderDaySummary(); renderSummary() }
+
+      function csvEscape(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s }
+      function download(name, text, type) { const blob = new Blob([text], { type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url) }
+      function exportCsv() { const rows = filteredEntries(), head = ['日付', '開始', '終了日', '終了', '作業区分', 'メモ', '時間_分', '時間']; const body = rows.map(e => [e.date, e.start, e.endDate || e.date, e.end, e.task, e.memo, e.minutes, durationText(e.minutes)]); download(`作業時間ログ_${$('monthFilter').value || 'all'}.csv`, '\ufeff' + [head, ...body].map(r => r.map(csvEscape).join(',')).join('\n'), 'text/csv;charset=utf-8') }
+      async function copySummary() { const rows = filteredEntries(), total = rows.reduce((s, e) => s + Number(e.minutes || 0), 0), month = $('monthFilter').value || '全期間'; const text = [`作業時間サマリ（${month}）`, `件数：${rows.length}件`, `合計：${durationText(total)}`].join('\n'); try { await navigator.clipboard.writeText(text); alert('月次サマリをコピーしました。') } catch { prompt('以下をコピーしてください。', text) } }
+      function backup() { download(`作業時間ログ_backup_${localDate()}.json`, JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), entries, categories }, null, 2), 'application/json') }
+      function restoreClick() { $('restoreFile').value = ''; $('restoreFile').click() }
+      function restoreFile(ev) { const f = ev.target.files && ev.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const p = JSON.parse(r.result); if (!Array.isArray(p.entries)) throw new Error(); if (!confirm('現在のデータをバックアップ内容で置き換えます。続行しますか？')) return; entries = p.entries; categories = Array.isArray(p.categories) && p.categories.length ? normalizeCategories(p.categories) : normalizeCategories([...DEFAULT_CATEGORIES, ...entries.map(e => e.task)]); activeTimer = null; saveAll(); refreshCategoryControls(); render(); alert('バックアップを復元しました。') } catch { alert('JSONの読み込みに失敗しました。') } }; r.readAsText(f, 'utf-8') }
+      function clearAll() { if (confirm('全ての作業ログを削除します。続行しますか？')) { entries = []; activeTimer = null; saveAll(); render() } }
+
+      function init() {
+        const today = localDate(); $('manualDate').value = today; $('daySummaryDate').value = today; $('monthFilter').value = currentMonth(); refreshCategoryControls();
+        $('startBtn').addEventListener('click', startTimer); $('stopBtn').addEventListener('click', stopTimer); $('cancelBtn').addEventListener('click', cancelTimer); $('manualAddBtn').addEventListener('click', addManual); $('saveTaskSettingsBtn').addEventListener('click', saveTaskSettings);
+        $('manualDate').addEventListener('change', () => { $('daySummaryDate').value = $('manualDate').value; renderDaySummary() }); $('daySummaryDate').addEventListener('change', renderDaySummary); $('monthFilter').addEventListener('change', render); $('keywordFilter').addEventListener('input', render);
+        $('exportCsvBtn').addEventListener('click', exportCsv); $('copySummaryBtn').addEventListener('click', copySummary); $('backupBtn').addEventListener('click', backup); $('restoreBtn').addEventListener('click', restoreClick); $('restoreFile').addEventListener('change', restoreFile); $('clearAllBtn').addEventListener('click', clearAll);
+        render(); tick(); setInterval(tick, 1000);
+      }
+      init();
+    })();
+  </script>
+</body>
+
+</html>
