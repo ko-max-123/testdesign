@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>エビデンスフォルダ作成ツール</title>
+<style>
+  :root {
+    --bg:#eef1f4;
+    --surface:#ffffff;
+    --surface-soft:#f7f8fa;
+    --surface-strong:#eef2f6;
+    --line:#d9dfe6;
+    --line-strong:#c8d0da;
+    --text:#202733;
+    --text-soft:#66717f;
+    --text-faint:#8a94a2;
+    --accent:#2456a6;
+    --accent-hover:#1c4689;
+    --accent-soft:#edf3fd;
+    --success:#24734d;
+    --success-bg:#edf7f1;
+    --warning:#8a6417;
+    --warning-bg:#fff8e8;
+    --danger:#a13a3a;
+    --radius:12px;
+    --shadow:0 1px 2px rgba(24,36,52,.04), 0 8px 24px rgba(24,36,52,.06);
+  }
+
+  * { box-sizing:border-box; }
+
+  html { color-scheme:light; }
+
+  body {
+    margin:0;
+    min-height:100vh;
+    font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  button, input, select { font:inherit; }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline:3px solid rgba(36,86,166,.18);
+    outline-offset:2px;
+  }
+
+  .app-shell {
+    max-width:1280px;
+    margin:0 auto;
+    padding:24px 24px 42px;
+  }
+
+  .topbar {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+    margin-bottom:18px;
+  }
+
+  .brand {
+    min-width:0;
+  }
+
+  .brand-line {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  h1 {
+    margin:0;
+    font-size:22px;
+    line-height:1.35;
+    font-weight:700;
+    letter-spacing:.01em;
+  }
+
+  .badge {
+    display:inline-flex;
+    align-items:center;
+    height:24px;
+    padding:0 9px;
+    border:1px solid #cdd9ea;
+    border-radius:999px;
+    background:#f7faff;
+    color:#526b90;
+    font-size:11px;
+    font-weight:700;
+  }
+
+  .sub {
+    margin-top:7px;
+    max-width:780px;
+    color:var(--text-soft);
+    font-size:13px;
+    line-height:1.65;
+  }
+
+  .flow {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
+    margin-top:2px;
+  }
+
+  .flow-step {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--text-faint);
+    font-size:12px;
+    white-space:nowrap;
+  }
+
+  .flow-step b {
+    display:grid;
+    place-items:center;
+    width:22px;
+    height:22px;
+    border:1px solid var(--line-strong);
+    border-radius:50%;
+    background:var(--surface);
+    color:#536171;
+    font-size:11px;
+  }
+
+  .flow-sep {
+    width:18px;
+    height:1px;
+    background:var(--line-strong);
+  }
+
+  .workspace {
+    display:grid;
+    grid-template-columns:minmax(0, 1.18fr) minmax(360px, .82fr);
+    gap:18px;
+    align-items:start;
+  }
+
+  .config-stack {
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-width:0;
+  }
+
+  .panel {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+  }
+
+  .panel.preview-panel {
+    position:sticky;
+    top:18px;
+    min-width:0;
+  }
+
+  .section-head {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+
+  .section-no {
+    display:grid;
+    place-items:center;
+    width:26px;
+    height:26px;
+    border-radius:7px;
+    background:var(--surface-strong);
+    color:#4f6074;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .section-title {
+    margin:0;
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:.01em;
+  }
+
+  .section-caption {
+    margin-left:auto;
+    color:var(--text-faint);
+    font-size:11px;
+  }
+
+  .field {
+    display:grid;
+    grid-template-columns:155px minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+    margin:10px 0;
+  }
+
+  .row {
+    display:grid;
+    grid-template-columns:155px minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+    margin:10px 0;
+  }
+
+  label {
+    font-size:13px;
+    font-weight:650;
+    color:#3c4654;
+  }
+
+  input[type="text"],
+  input[type="file"],
+  select {
+    width:100%;
+    min-height:40px;
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    background:#fff;
+    color:var(--text);
+    padding:8px 10px;
+    font-size:13px;
+  }
+
+  input[readonly] {
+    background:var(--surface-soft);
+    color:#586575;
+  }
+
+  input[type="file"] {
+    padding:7px 9px;
+  }
+
+  select:disabled,
+  input:disabled {
+    opacity:.62;
+  }
+
+  button {
+    min-height:40px;
+    border:1px solid transparent;
+    border-radius:8px;
+    padding:8px 13px;
+    background:#e9edf2;
+    color:#344252;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .05s ease;
+    white-space:nowrap;
+  }
+
+  button:hover:not(:disabled) {
+    background:#dde3ea;
+  }
+
+  button:active:not(:disabled) {
+    transform:translateY(1px);
+  }
+
+  button.primary {
+    background:var(--accent);
+    color:#fff;
+  }
+
+  button.primary:hover:not(:disabled) {
+    background:var(--accent-hover);
+  }
+
+  button.secondary {
+    background:#fff;
+    border-color:var(--line-strong);
+  }
+
+  button:disabled {
+    opacity:.42;
+    cursor:not-allowed;
+  }
+
+  .mode-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:14px;
+  }
+
+  .mode-card {
+    position:relative;
+    display:block;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--surface-soft);
+    padding:13px 14px;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+
+  .mode-card:hover {
+    border-color:#bfc9d5;
+  }
+
+  .mode-card:has(input:checked) {
+    border-color:#8faad0;
+    background:var(--accent-soft);
+    box-shadow:0 0 0 2px rgba(36,86,166,.06);
+  }
+
+  .mode-card input {
+    position:absolute;
+    opacity:0;
+    pointer-events:none;
+  }
+
+  .mode-title {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:750;
+    color:#2d3948;
+  }
+
+  .mode-title::before {
+    content:"";
+    width:9px;
+    height:9px;
+    border:2px solid #9aa7b7;
+    border-radius:50%;
+    background:#fff;
+  }
+
+  .mode-card:has(input:checked) .mode-title::before {
+    border-color:var(--accent);
+    box-shadow:inset 0 0 0 2px #fff;
+    background:var(--accent);
+  }
+
+  .mode-desc {
+    display:block;
+    margin-top:5px;
+    padding-left:17px;
+    color:var(--text-soft);
+    font-size:11px;
+    line-height:1.55;
+    font-weight:400;
+  }
+
+  .choices {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .choices label {
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    min-height:36px;
+    padding:7px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--surface-soft);
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  .choices label:has(input:checked) {
+    border-color:#a9bddd;
+    background:var(--accent-soft);
+    color:#304f7e;
+  }
+
+  .choices input[type="radio"],
+  .choices input[type="checkbox"] {
+    accent-color:var(--accent);
+  }
+
+  .group-label {
+    display:block;
+    margin:16px 0 8px;
+    color:#4a5665;
+    font-size:12px;
+    font-weight:750;
+  }
+
+  .note,
+  .helper {
+    margin-top:8px;
+    color:var(--text-soft);
+    font-size:11.5px;
+    line-height:1.65;
+  }
+
+  code {
+    font-family:Consolas,monospace;
+    font-size:.95em;
+    background:#eef1f4;
+    border-radius:4px;
+    padding:1px 4px;
+  }
+
+  .status {
+    position:relative;
+    margin-top:12px;
+    padding:10px 12px 10px 34px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--surface-soft);
+    color:#536172;
+    font-size:12px;
+    line-height:1.55;
+    white-space:pre-wrap;
+  }
+
+  .status::before {
+    content:"";
+    position:absolute;
+    left:13px;
+    top:14px;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#98a4b2;
+  }
+
+  .status.ok {
+    border-color:#c9e6d6;
+    background:var(--success-bg);
+    color:var(--success);
+  }
+
+  .status.ok::before { background:var(--success); }
+
+  .status.warn {
+    border-color:#ead9aa;
+    background:var(--warning-bg);
+    color:var(--warning);
+  }
+
+  .status.warn::before { background:#c08b25; }
+
+  .platform-box {
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid #e6eaf0;
+  }
+
+  .platform-list {
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-top:8px;
+  }
+
+  .platform-item {
+    display:flex;
+    align-items:center;
+    gap:5px;
+    min-width:0;
+    padding:4px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--surface-soft);
+  }
+
+  .platform-item input {
+    width:130px;
+    min-height:30px;
+    border:0;
+    background:transparent;
+    padding:4px 6px;
+    font-size:12px;
+  }
+
+  .platform-item input:focus {
+    outline:none;
+  }
+
+  .platform-item button {
+    min-height:28px;
+    padding:4px 8px;
+    border:0;
+    background:transparent;
+    color:#7b8794;
+    font-size:11px;
+  }
+
+  .platform-item button:hover:not(:disabled) {
+    background:#e8ecf1;
+    color:var(--danger);
+  }
+
+  .platform-add-row {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    margin-top:8px;
+  }
+
+  .platform-add-row input {
+    min-height:36px;
+  }
+
+  .preview-head {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:10px;
+  }
+
+  .preview-summary {
+    color:var(--text-soft);
+    font-size:11px;
+    line-height:1.5;
+  }
+
+  .preview {
+    border:1px solid #dce2e8;
+    border-radius:9px;
+    background:#f8fafb;
+    min-height:330px;
+    max-height:56vh;
+    overflow:auto;
+    padding:13px;
+    white-space:pre;
+    font-family:Consolas,"Yu Gothic UI",monospace;
+    font-size:12px;
+    line-height:1.6;
+    color:#344150;
+  }
+
+  .action-box {
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid #e5e9ee;
+  }
+
+  .actions {
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:0;
+  }
+
+  .actions button {
+    width:100%;
+  }
+
+  .mini-tip {
+    margin-top:9px;
+    color:var(--text-faint);
+    font-size:10.5px;
+    line-height:1.55;
+  }
+
+  .evidence-check-panel {
+    margin-top:18px;
+  }
+
+  .check-intro {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    margin-bottom:14px;
+  }
+
+  .check-intro-text {
+    color:var(--text-soft);
+    font-size:12px;
+    line-height:1.7;
+  }
+
+  .check-toolbar {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    gap:9px;
+    align-items:center;
+  }
+
+  .check-folder-display {
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    padding:8px 11px;
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    background:var(--surface-soft);
+    color:#586575;
+    font-size:13px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .check-options {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+
+  .check-platform-summary {
+    color:var(--text-soft);
+    font-size:11.5px;
+    line-height:1.6;
+  }
+
+  .inline-check {
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    min-height:34px;
+    padding:6px 9px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--surface-soft);
+    font-size:11.5px;
+    font-weight:650;
+    cursor:pointer;
+  }
+
+  .inline-check input { accent-color:var(--accent); }
+
+  .check-summary-grid {
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:9px;
+    margin-top:14px;
+  }
+
+  .check-summary-card {
+    min-width:0;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:var(--surface-soft);
+  }
+
+  .check-summary-card .k {
+    color:var(--text-faint);
+    font-size:10.5px;
+    font-weight:700;
+  }
+
+  .check-summary-card .v {
+    margin-top:3px;
+    color:#2d3948;
+    font-size:20px;
+    line-height:1.15;
+    font-weight:750;
+  }
+
+  .check-summary-card.ok .v { color:var(--success); }
+  .check-summary-card.warn .v { color:var(--warning); }
+  .check-summary-card.danger .v { color:var(--danger); }
+
+  .check-table-wrap {
+    margin-top:12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    overflow:auto;
+    background:#fff;
+  }
+
+  .check-table {
+    width:100%;
+    border-collapse:collapse;
+    min-width:720px;
+    font-size:12px;
+  }
+
+  .check-table th {
+    position:sticky;
+    top:0;
+    z-index:1;
+    padding:9px 10px;
+    border-bottom:1px solid var(--line);
+    background:#f5f7f9;
+    color:#596575;
+    text-align:left;
+    font-size:10.5px;
+    letter-spacing:.02em;
+    white-space:nowrap;
+  }
+
+  .check-table td {
+    padding:9px 10px;
+    border-bottom:1px solid #edf0f3;
+    color:#3a4655;
+    vertical-align:middle;
+  }
+
+  .check-table tr:last-child td { border-bottom:0; }
+  .check-table tr.issue-row { background:#fffdfa; }
+
+  .result-pill {
+    display:inline-flex;
+    align-items:center;
+    min-height:24px;
+    padding:3px 8px;
+    border-radius:999px;
+    font-size:10.5px;
+    font-weight:750;
+    white-space:nowrap;
+  }
+
+  .result-pill.ok { background:var(--success-bg); color:var(--success); }
+  .result-pill.shortage { background:var(--warning-bg); color:var(--warning); }
+  .result-pill.excess,
+  .result-pill.missing { background:#fff0f0; color:var(--danger); }
+
+  .count-diff {
+    font-family:Consolas,monospace;
+    font-weight:700;
+  }
+
+  .empty-check-result {
+    padding:24px 16px;
+    color:var(--text-faint);
+    text-align:center;
+    font-size:12px;
+    line-height:1.7;
+  }
+
+  .hidden { display:none !important; }
+
+  @media (max-width:980px) {
+    .workspace { grid-template-columns:1fr; }
+    .panel.preview-panel { position:static; }
+    .preview { min-height:240px; max-height:420px; }
+    .flow { display:none; }
+  }
+
+  @media (max-width:720px) {
+    .app-shell { padding:16px 12px 32px; }
+    .topbar { margin-bottom:12px; }
+    h1 { font-size:19px; }
+    .panel { padding:14px; }
+    .mode-grid { grid-template-columns:1fr; }
+    .row, .field { grid-template-columns:1fr; gap:6px; }
+    .row button, .field button { width:100%; }
+    .section-caption { display:none; }
+    .platform-item { width:100%; }
+    .platform-item input { width:100%; }
+    .check-toolbar { grid-template-columns:1fr; }
+    .check-toolbar button { width:100%; }
+    .check-summary-grid { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-line">
+        <h1>エビデンスフォルダ作成ツール</h1>
+        <span class="badge">HTML版 v7</span>
+      </div>
+      <div class="sub">Excelを選ぶ → ルールを決める → 作成 → 枚数チェック。エビデンス用フォルダの準備と確認を1画面で行えます。</div>
+    </div>
+    <div class="flow" aria-label="操作の流れ">
+      <span class="flow-step"><b>1</b> Excel</span>
+      <span class="flow-sep"></span>
+      <span class="flow-step"><b>2</b> ルール</span>
+      <span class="flow-sep"></span>
+      <span class="flow-step"><b>3</b> 作成</span>
+      <span class="flow-sep"></span>
+      <span class="flow-step"><b>4</b> 検査</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <main class="config-stack">
+  <div class="panel">
+    <div class="section-head"><span class="section-no">1</span><h2 class="section-title">テスト仕様書を選択</h2><span class="section-caption">入力</span></div>
+
+    <div style="margin-bottom:16px;">
+      <span class="group-label" style="margin-top:0">処理方法</span>
+      <div class="mode-grid">
+        <label class="mode-card">
+          <input type="radio" name="processMode" value="single" checked>
+          <span class="mode-title">単一Excel</span>
+          <span class="mode-desc">対象ファイルとシートを確認しながら作成</span>
+        </label>
+        <label class="mode-card">
+          <input type="radio" name="processMode" value="batch">
+          <span class="mode-title">フォルダ一括</span>
+          <span class="mode-desc">フォルダ直下の全Excelをまとめて処理</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="row" id="dirRow">
+      <label>Excel格納フォルダ</label>
+      <input type="text" id="sourceDirName" readonly placeholder="未選択">
+      <button id="chooseDirBtn">選択</button>
+    </div>
+
+    <div class="row hidden" id="singleBookRow">
+      <label>Excelファイル</label>
+      <select id="bookSelect"></select>
+      <button id="loadBookBtn">読み込む</button>
+    </div>
+
+    <div class="row hidden" id="batchBookRow">
+      <label>フォルダ内Excel</label>
+      <input type="text" id="batchBookCount" readonly>
+      <button id="loadAllBooksBtn">一括読込</button>
+    </div>
+
+    <div class="row" id="directFileRow">
+      <label>Excelを直接選択</label>
+      <input type="file" id="fileInput" accept=".xlsx,.xlsm">
+      <span></span>
+    </div>
+
+    <div class="note" id="singleModeNote">
+      フォルダから選ぶか、Excelを直接指定できます。複数Excelがある場合も対象を1つ選べます。
+    </div>
+
+    <div class="note hidden" id="batchModeNote">
+      フォルダ直下の <code>.xlsx / .xlsm</code> をまとめて処理します。Excelごとにフォルダを分け、<code>~$</code> の一時ファイルは除外します。
+    </div>
+
+    <div id="loadStatus" class="status">未読み込み</div>
+  </div>
+
+  <div class="panel">
+    <div class="section-head"><span class="section-no">2</span><h2 class="section-title">作成ルール</h2><span class="section-caption">設定</span></div>
+
+    <div class="row" id="sheetRow">
+      <label>対象シート</label>
+      <select id="sheetSelect" disabled></select>
+      <span></span>
+    </div>
+
+    <div class="row">
+      <label>親フォルダ名</label>
+      <select id="parentMode">
+        <option value="source">テスト仕様書フォルダ名</option>
+        <option value="book">Excelファイル名</option>
+        <option value="custom">任意指定</option>
+      </select>
+      <span></span>
+    </div>
+
+    <div class="row hidden" id="customParentRow">
+      <label>任意の親フォルダ名</label>
+      <input type="text" id="customParent" placeholder="例: クーポン_ST_エビデンス">
+      <span></span>
+    </div>
+
+    <div class="note hidden" id="batchStructureNote">
+      一括作成時は各Excelが混ざらないよう、親フォルダの直下にExcelファイル名のフォルダを自動作成します。
+    </div>
+
+    <div style="margin-top:14px;">
+      <span class="group-label">ID / シナリオID の作り方</span>
+      <div class="choices">
+        <label><input type="radio" name="submode" value="scenario" checked> シナリオID（例: P1-1）</label>
+        <label><input type="radio" name="submode" value="id"> ID（期待値単位で範囲化。例: 1~8）</label>
+        <label><input type="radio" name="submode" value="scenario_id"> シナリオID + ID（例: P1-1_1）</label>
+      </div>
+    </div>
+
+    <div class="platform-box">
+      <span class="group-label" style="margin-top:0">端末・環境フォルダ</span>
+
+      <div id="platformList" class="platform-list"></div>
+
+      <div class="platform-add-row">
+        <input type="text" id="newPlatformName" placeholder="例: iPad / Tablet / Web / Chrome など">
+        <button type="button" id="addPlatformBtn">追加</button>
+      </div>
+
+      <div class="note" style="margin-top:8px;">
+        初期値として <code>iOS</code> と <code>And</code> を入れています。
+        不要なものは削除でき、必要な端末名・環境名を自由に追加できます。
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:14px;">
+      IDモードでは、期待値が入っている行を区切りとしてIDをまとめます。
+      例: ID 1～7 の期待値が空欄で、ID 8 に期待値がある場合は、
+      個別の「1」「2」…ではなく <code>1~8</code> という1つのフォルダを作成します。
+      その次に ID 9～12 が続き ID 12 に期待値があれば、<code>9~12</code> を作成します。
+    </div>
+  </div>
+
+    </main>
+    <aside>
+  <div class="panel preview-panel">
+    <div class="preview-head"><div class="section-head" style="margin-bottom:0"><span class="section-no">3</span><h2 class="section-title">作成プレビュー</h2></div><div class="preview-summary">内容を確認してから作成</div></div>
+    <div id="preview" class="preview">テスト仕様書を読み込むと、ここに作成予定フォルダが表示されます。</div>
+
+    <div class="action-box">
+      <div class="actions">
+        <button class="primary" id="createDirectBtn" disabled>出力先を選んで作成</button>
+        <button class="secondary" id="downloadZipBtn" disabled>ZIPで保存</button>
+      </div>
+      <div class="mini-tip">Chrome / Edge では直接フォルダ作成が使えます。制限がある環境ではZIP保存を利用できます。</div>
+      <div id="resultStatus" class="status">待機中</div>
+    </div>
+  </div>
+    </aside>
+  </div>
+
+  <section class="panel evidence-check-panel" aria-labelledby="evidenceCheckTitle">
+    <div class="section-head">
+      <span class="section-no">4</span>
+      <h2 class="section-title" id="evidenceCheckTitle">エビデンス枚数チェック</h2>
+      <span class="section-caption">作成後の確認</span>
+    </div>
+
+    <div class="check-intro">
+      <div class="check-intro-text">
+        <code>1~8</code> は8枚、<code>9~12</code> は4枚、<code>21</code> は1枚として、端末・環境フォルダ内の画像枚数を確認します。
+        画像ファイル名は自由で、ファイル名の連番・重複チェックは行いません。
+      </div>
+    </div>
+
+    <div class="check-toolbar">
+      <div class="check-folder-display" id="checkFolderName">検査するエビデンスフォルダを選択してください</div>
+      <button class="primary" type="button" id="chooseCheckDirBtn">フォルダを選んで検査</button>
+      <button class="secondary" type="button" id="recheckBtn" disabled>再チェック</button>
+    </div>
+
+    <div class="check-options">
+      <div class="check-platform-summary" id="checkPlatformSummary"></div>
+      <label class="inline-check"><input type="checkbox" id="issuesOnlyCheck"> 問題があるものだけ表示</label>
+    </div>
+
+    <div id="checkStatus" class="status">未検査</div>
+
+    <div class="check-summary-grid" id="checkSummaryGrid">
+      <div class="check-summary-card"><div class="k">検査対象</div><div class="v" id="summaryTarget">0</div></div>
+      <div class="check-summary-card ok"><div class="k">OK</div><div class="v" id="summaryOk">0</div></div>
+      <div class="check-summary-card warn"><div class="k">不足</div><div class="v" id="summaryShortage">0</div></div>
+      <div class="check-summary-card danger"><div class="k">超過 / フォルダなし</div><div class="v" id="summaryOtherIssue">0</div></div>
+    </div>
+
+    <div class="check-table-wrap">
+      <table class="check-table" aria-label="エビデンス枚数チェック結果">
+        <thead>
+          <tr>
+            <th>IDフォルダ</th>
+            <th>端末・環境</th>
+            <th>想定枚数</th>
+            <th>実際枚数</th>
+            <th>差分</th>
+            <th>判定</th>
+          </tr>
+        </thead>
+        <tbody id="checkResultBody">
+          <tr><td colspan="6"><div class="empty-check-result">検査すると結果がここに表示されます。</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mini-tip">画像として数える拡張子: PNG / JPG / JPEG / WEBP / BMP / GIF / HEIC / HEIF / TIF / TIFF。画像以外のファイルは枚数に含めません。</div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* =========================
+   ZIP Reader (xlsx reading)
+   外部ライブラリ不使用
+   ========================= */
+
+function u16(dv, o) { return dv.getUint16(o, true); }
+function u32(dv, o) { return dv.getUint32(o, true); }
+
+async function inflateRaw(bytes) {
+  if (!("DecompressionStream" in window)) {
+    throw new Error("このブラウザはZIP展開に必要な DecompressionStream に対応していません。Chrome/Edgeの最新版を使用してください。");
+  }
+  let ds;
+  try {
+    ds = new DecompressionStream("deflate-raw");
+  } catch (_) {
+    // 一部環境向けフォールバック
+    ds = new DecompressionStream("deflate");
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function readZipEntries(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const dv = new DataView(arrayBuffer);
+
+  // EOCDを末尾から探索
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+    if (u32(dv, i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("ZIP終端情報を見つけられません。xlsx/xlsmファイルか確認してください。");
+
+  const totalEntries = u16(dv, eocd + 10);
+  const cdOffset = u32(dv, eocd + 16);
+
+  const decoder = new TextDecoder("utf-8");
+  const entries = new Map();
+
+  let p = cdOffset;
+  for (let i = 0; i < totalEntries; i++) {
+    if (u32(dv, p) !== 0x02014b50) throw new Error("ZIP中央ディレクトリの解析に失敗しました。");
+
+    const method = u16(dv, p + 10);
+    const compressedSize = u32(dv, p + 20);
+    const uncompressedSize = u32(dv, p + 24);
+    const nameLen = u16(dv, p + 28);
+    const extraLen = u16(dv, p + 30);
+    const commentLen = u16(dv, p + 32);
+    const localOffset = u32(dv, p + 42);
+
+    const name = decoder.decode(bytes.slice(p + 46, p + 46 + nameLen));
+
+    if (u32(dv, localOffset) !== 0x04034b50) throw new Error("ZIPローカルヘッダーの解析に失敗しました。");
+    const localNameLen = u16(dv, localOffset + 26);
+    const localExtraLen = u16(dv, localOffset + 28);
+    const dataStart = localOffset + 30 + localNameLen + localExtraLen;
+    const compressed = bytes.slice(dataStart, dataStart + compressedSize);
+
+    let data;
+    if (method === 0) {
+      data = compressed;
+    } else if (method === 8) {
+      data = await inflateRaw(compressed);
+    } else {
+      throw new Error(`未対応のZIP圧縮方式です: ${method}`);
+    }
+
+    entries.set(name, data);
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+
+  return entries;
+}
+
+function xmlText(bytes) {
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+function parseXml(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  const err = doc.querySelector("parsererror");
+  if (err) throw new Error("Excel内部XMLの解析に失敗しました。");
+  return doc;
+}
+
+function localName(el) {
+  return el.localName || el.nodeName.split(":").pop();
+}
+
+function childElementsByLocal(parent, name) {
+  return Array.from(parent.children).filter(x => localName(x) === name);
+}
+
+function descendantsByLocal(parent, name) {
+  return Array.from(parent.getElementsByTagName("*")).filter(x => localName(x) === name);
+}
+
+function colLettersToIndex(letters) {
+  let n = 0;
+  for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+}
+
+function normalizeHeader(v) {
+  return String(v ?? "").replace(/\u3000/g, " ").replace(/\s+/g, "").toUpperCase();
+}
+
+function sanitizeName(v) {
+  let s = String(v ?? "").trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
+    .replace(/[ .]+$/g, "");
+  if (!s) s = "_blank_";
+  const reserved = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+  if (reserved.test(s)) s = "_" + s;
+  return s;
+}
+
+function normalizeId(v) {
+  let s = String(v ?? "").trim();
+  if (!s) return "";
+  if (/^-?\d+\.0+$/.test(s)) s = String(parseInt(s, 10));
+  return s;
+}
+
+async function parseXlsx(file) {
+  const entries = await readZipEntries(await file.arrayBuffer());
+
+  const workbookBytes = entries.get("xl/workbook.xml");
+  const relBytes = entries.get("xl/_rels/workbook.xml.rels");
+  if (!workbookBytes || !relBytes) throw new Error("Excelブック情報が見つかりません。");
+
+  const workbook = parseXml(xmlText(workbookBytes));
+  const rels = parseXml(xmlText(relBytes));
+
+  const relMap = new Map();
+  for (const rel of descendantsByLocal(rels, "Relationship")) {
+    relMap.set(rel.getAttribute("Id"), rel.getAttribute("Target"));
+  }
+
+  const sharedStrings = [];
+  const ssBytes = entries.get("xl/sharedStrings.xml");
+  if (ssBytes) {
+    const ss = parseXml(xmlText(ssBytes));
+    for (const si of descendantsByLocal(ss, "si")) {
+      const tNodes = descendantsByLocal(si, "t");
+      sharedStrings.push(tNodes.map(x => x.textContent || "").join(""));
+    }
+  }
+
+  const sheetDefs = [];
+  for (const sheet of descendantsByLocal(workbook, "sheet")) {
+    const name = sheet.getAttribute("name") || "Sheet";
+    let rid = null;
+    for (const attr of Array.from(sheet.attributes)) {
+      if (attr.localName === "id") rid = attr.value;
+    }
+    const target = relMap.get(rid);
+    if (!target) continue;
+
+    let path = target.startsWith("/") ? target.slice(1) : "xl/" + target;
+    path = path.replace(/^xl\/\.\.\//, "");
+    sheetDefs.push({name, path});
+  }
+
+  const parsedSheets = [];
+
+  for (const def of sheetDefs) {
+    const data = entries.get(def.path);
+    if (!data) continue;
+
+    const sheetDoc = parseXml(xmlText(data));
+    const rows = [];
+
+    for (const rowEl of descendantsByLocal(sheetDoc, "row")) {
+      const row = new Map();
+
+      for (const c of childElementsByLocal(rowEl, "c")) {
+        const ref = c.getAttribute("r") || "";
+        const m = /^([A-Z]+)(\d+)$/.exec(ref);
+        if (!m) continue;
+        const col = colLettersToIndex(m[1]);
+
+        const type = c.getAttribute("t") || "";
+        let value = "";
+
+        if (type === "inlineStr") {
+          value = descendantsByLocal(c, "t").map(x => x.textContent || "").join("");
+        } else {
+          const vEl = childElementsByLocal(c, "v")[0];
+          const raw = vEl ? (vEl.textContent || "") : "";
+          if (type === "s") {
+            const idx = parseInt(raw, 10);
+            value = Number.isFinite(idx) ? (sharedStrings[idx] ?? raw) : raw;
+          } else if (type === "b") {
+            value = raw === "1" ? "TRUE" : "FALSE";
+          } else {
+            value = raw;
+          }
+        }
+
+        row.set(col, value);
+      }
+      rows.push(row);
+    }
+
+    let headerIndex = -1;
+    let idCol = null;
+    let scenarioCol = null;
+    let expectedCol = null;
+
+    const limit = Math.min(rows.length, 30);
+    for (let i = 0; i < limit; i++) {
+      let rowIdCol = null;
+      let rowScenarioCol = null;
+      let rowExpectedCol = null;
+
+      for (const [col, value] of rows[i].entries()) {
+        const n = normalizeHeader(value);
+        if (n === "ID") rowIdCol = col;
+        if (n === "シナリオID" || n === "SCENARIOID") rowScenarioCol = col;
+        if (n === "期待値" || n === "EXPECTEDVALUE") rowExpectedCol = col;
+      }
+
+      if (rowIdCol !== null || rowScenarioCol !== null) {
+        if (headerIndex < 0) {
+          headerIndex = i;
+          idCol = rowIdCol;
+          scenarioCol = rowScenarioCol;
+          expectedCol = rowExpectedCol;
+        }
+        if (rowIdCol !== null && rowScenarioCol !== null) {
+          headerIndex = i;
+          idCol = rowIdCol;
+          scenarioCol = rowScenarioCol;
+          expectedCol = rowExpectedCol;
+          break;
+        }
+      }
+    }
+
+    if (headerIndex >= 0) {
+      parsedSheets.push({
+        name:def.name,
+        headerIndex,
+        idCol,
+        scenarioCol,
+        expectedCol,
+        rows
+      });
+    }
+  }
+
+  if (!parsedSheets.length) {
+    throw new Error("ID または シナリオID の列があるシートを見つけられませんでした。");
+  }
+
+  return parsedSheets;
+}
+
+/* =========================
+   ZIP Writer（空フォルダ出力用）
+   ========================= */
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[i] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function dosDateTime(date = new Date()) {
+  let year = Math.max(1980, date.getFullYear());
+  const time = ((date.getHours() & 31) << 11) | ((date.getMinutes() & 63) << 5) | ((date.getSeconds() / 2) & 31);
+  const d = (((year - 1980) & 127) << 9) | (((date.getMonth() + 1) & 15) << 5) | (date.getDate() & 31);
+  return {time, date:d};
+}
+
+function concatArrays(parts) {
+  const len = parts.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(len);
+  let pos = 0;
+  for (const p of parts) { out.set(p, pos); pos += p.length; }
+  return out;
+}
+
+function makeStoredZip(entries) {
+  const enc = new TextEncoder();
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  const dt = dosDateTime();
+
+  for (const entry of entries) {
+    const name = entry.name.endsWith("/") ? entry.name : entry.name;
+    const nameBytes = enc.encode(name);
+    const data = entry.data || new Uint8Array(0);
+    const crc = crc32(data);
+
+    const local = new Uint8Array(30 + nameBytes.length + data.length);
+    const dv = new DataView(local.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0x0800, true); // UTF-8
+    dv.setUint16(8, 0, true);      // stored
+    dv.setUint16(10, dt.time, true);
+    dv.setUint16(12, dt.date, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true);
+    dv.setUint32(22, data.length, true);
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    local.set(data, 30 + nameBytes.length);
+    locals.push(local);
+
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cdv = new DataView(central.buffer);
+    cdv.setUint32(0, 0x02014b50, true);
+    cdv.setUint16(4, 20, true);
+    cdv.setUint16(6, 20, true);
+    cdv.setUint16(8, 0x0800, true);
+    cdv.setUint16(10, 0, true);
+    cdv.setUint16(12, dt.time, true);
+    cdv.setUint16(14, dt.date, true);
+    cdv.setUint32(16, crc, true);
+    cdv.setUint32(20, data.length, true);
+    cdv.setUint32(24, data.length, true);
+    cdv.setUint16(28, nameBytes.length, true);
+    cdv.setUint16(30, 0, true);
+    cdv.setUint16(32, 0, true);
+    cdv.setUint16(34, 0, true);
+    cdv.setUint16(36, 0, true);
+    cdv.setUint32(38, name.endsWith("/") ? 0x10 : 0, true);
+    cdv.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    centrals.push(central);
+
+    offset += local.length;
+  }
+
+  const cdOffset = offset;
+  const centralBlob = concatArrays(centrals);
+  const eocd = new Uint8Array(22);
+  const edv = new DataView(eocd.buffer);
+  edv.setUint32(0, 0x06054b50, true);
+  edv.setUint16(4, 0, true);
+  edv.setUint16(6, 0, true);
+  edv.setUint16(8, entries.length, true);
+  edv.setUint16(10, entries.length, true);
+  edv.setUint32(12, centralBlob.length, true);
+  edv.setUint32(16, cdOffset, true);
+  edv.setUint16(20, 0, true);
+
+  return new Blob([...locals, centralBlob, eocd], {type:"application/zip"});
+}
+
+/* =========================
+   App
+   ========================= */
+
+let sourceDirHandle = null;
+let folderBooks = [];       // フォルダ直下で検出したExcel
+let selectedFile = null;
+let selectedFileName = "";
+let parsedSheets = [];      // 単一モード
+let batchBooks = [];        // 一括モード: {name, sheets, error}
+
+const $ = id => document.getElementById(id);
+
+function isBatchMode() {
+  return document.querySelector('input[name="processMode"]:checked').value === "batch";
+}
+
+function selectedSubMode() {
+  return document.querySelector('input[name="submode"]:checked').value;
+}
+
+function getCurrentSheet() {
+  const idx = parseInt($("sheetSelect").value, 10);
+  return parsedSheets[idx] || null;
+}
+
+function isMeaningfulExpectedValue(value) {
+  const s = String(value ?? "").trim().replace(/\s+/g, "");
+  if (!s) return false;
+  const emptyMarks = new Set(["-", "－", "―", "—", "–"]);
+  return !emptyMarks.has(s);
+}
+
+let platformFolders = ["iOS", "And"];
+
+function renderPlatformFolders() {
+  const list = $("platformList");
+  list.innerHTML = "";
+
+  platformFolders.forEach((name, index) => {
+    const row = document.createElement("div");
+    row.className = "platform-item";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = name;
+    input.setAttribute("aria-label", `端末別サブフォルダ ${index + 1}`);
+    input.addEventListener("input", () => {
+      platformFolders[index] = input.value;
+      refreshPreview();
+    });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = "削除";
+    removeBtn.addEventListener("click", () => {
+      platformFolders.splice(index, 1);
+      renderPlatformFolders();
+      refreshPreview();
+    });
+
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    list.appendChild(row);
+  });
+
+  updateCheckPlatformSummary();
+}
+
+function addPlatformFolder() {
+  const input = $("newPlatformName");
+  const raw = input.value.trim();
+  if (!raw) return;
+
+  const safe = sanitizeName(raw);
+  const exists = platformFolders.some(x => sanitizeName(x).toLowerCase() === safe.toLowerCase());
+  if (exists) {
+    $("resultStatus").className = "status warn";
+    $("resultStatus").textContent = `「${safe}」はすでに追加されています。`;
+    return;
+  }
+
+  platformFolders.push(safe);
+  input.value = "";
+  renderPlatformFolders();
+  refreshPreview();
+}
+
+function getPlatformFolderNames() {
+  const out = [];
+  const seen = new Set();
+
+  for (const raw of platformFolders) {
+    const trimmed = String(raw ?? "").trim();
+    if (!trimmed) continue;
+
+    const safe = sanitizeName(trimmed);
+    const key = safe.toLowerCase();
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    out.push(safe);
+  }
+
+  return out;
+}
+
+/* =========================
+   Evidence count checker
+   ========================= */
+
+let checkDirHandle = null;
+let evidenceCheckRows = [];
+const IMAGE_FILE_RE = /\.(png|jpe?g|webp|bmp|gif|heic|heif|tiff?)$/i;
+
+function updateCheckPlatformSummary() {
+  const el = $("checkPlatformSummary");
+  if (!el) return;
+  const platforms = getPlatformFolderNames();
+  el.textContent = platforms.length
+    ? `検査対象端末: ${platforms.join(" / ")}（上の「端末・環境フォルダ」設定を使用）`
+    : "検査対象端末が未設定です。上の「端末・環境フォルダ」に追加してください。";
+}
+
+function parseEvidenceRangeName(name) {
+  const m = /^\s*(\d+)\s*(?:[~～〜]\s*(\d+)\s*)?$/.exec(String(name ?? ""));
+  if (!m) return null;
+
+  const start = parseInt(m[1], 10);
+  const end = m[2] ? parseInt(m[2], 10) : start;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start <= 0 || end < start) return null;
+
+  return {start, end, expected:end - start + 1};
+}
+
+async function listChildDirectories(dirHandle) {
+  const dirs = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === "directory") dirs.push({name, handle});
+  }
+  return dirs;
+}
+
+async function countImagesInDirectory(dirHandle) {
+  let count = 0;
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === "file" && IMAGE_FILE_RE.test(name)) count++;
+  }
+  return count;
+}
+
+function makeCheckRow(path, platform, expected, actual, missingFolder = false) {
+  if (missingFolder) {
+    return {path, platform, expected, actual:0, diff:-expected, status:"missing", label:"フォルダなし"};
+  }
+
+  const diff = actual - expected;
+  if (diff === 0) return {path, platform, expected, actual, diff, status:"ok", label:"OK"};
+  if (diff < 0) return {path, platform, expected, actual, diff, status:"shortage", label:`${Math.abs(diff)}枚不足`};
+  return {path, platform, expected, actual, diff, status:"excess", label:`${diff}枚超過`};
+}
+
+async function inspectEvidenceRangeFolder(rangeHandle, displayPath, expectedCount, platforms) {
+  const children = await listChildDirectories(rangeHandle);
+  const dirMap = new Map(children.map(x => [x.name.toLowerCase(), x]));
+  const rows = [];
+
+  for (const platform of platforms) {
+    const found = dirMap.get(platform.toLowerCase());
+    if (!found) {
+      rows.push(makeCheckRow(displayPath, platform, expectedCount, 0, true));
+      continue;
+    }
+
+    const actual = await countImagesInDirectory(found.handle);
+    rows.push(makeCheckRow(displayPath, found.name, expectedCount, actual, false));
+  }
+
+  return rows;
+}
+
+async function scanEvidenceDirectoryTree(dirHandle, pathParts, platforms, rows, depth = 0) {
+  if (depth > 12) return;
+
+  const ownRange = parseEvidenceRangeName(dirHandle.name);
+  if (ownRange) {
+    const displayPath = pathParts.length ? pathParts.join(" / ") : dirHandle.name;
+    rows.push(...await inspectEvidenceRangeFolder(dirHandle, displayPath, ownRange.expected, platforms));
+    return;
+  }
+
+  const children = await listChildDirectories(dirHandle);
+  for (const child of children) {
+    const range = parseEvidenceRangeName(child.name);
+    const childPath = [...pathParts, child.name];
+
+    if (range) {
+      rows.push(...await inspectEvidenceRangeFolder(child.handle, childPath.join(" / "), range.expected, platforms));
+    } else {
+      await scanEvidenceDirectoryTree(child.handle, childPath, platforms, rows, depth + 1);
+    }
+  }
+}
+
+function renderEvidenceCheckResults() {
+  const issuesOnly = $("issuesOnlyCheck").checked;
+  const body = $("checkResultBody");
+  const visibleRows = issuesOnly
+    ? evidenceCheckRows.filter(x => x.status !== "ok")
+    : evidenceCheckRows;
+
+  body.innerHTML = "";
+
+  if (!visibleRows.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 6;
+    const empty = document.createElement("div");
+    empty.className = "empty-check-result";
+    empty.textContent = evidenceCheckRows.length
+      ? "条件に一致する問題はありません。"
+      : "検査すると結果がここに表示されます。";
+    td.appendChild(empty);
+    tr.appendChild(td);
+    body.appendChild(tr);
+  } else {
+    for (const row of visibleRows) {
+      const tr = document.createElement("tr");
+      if (row.status !== "ok") tr.classList.add("issue-row");
+
+      const values = [row.path, row.platform, String(row.expected), String(row.actual)];
+      values.forEach(value => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+
+      const diffTd = document.createElement("td");
+      diffTd.className = "count-diff";
+      diffTd.textContent = row.diff === 0 ? "±0" : (row.diff > 0 ? `+${row.diff}` : String(row.diff));
+      tr.appendChild(diffTd);
+
+      const resultTd = document.createElement("td");
+      const pill = document.createElement("span");
+      pill.className = `result-pill ${row.status}`;
+      pill.textContent = row.label;
+      resultTd.appendChild(pill);
+      tr.appendChild(resultTd);
+
+      body.appendChild(tr);
+    }
+  }
+
+  const ok = evidenceCheckRows.filter(x => x.status === "ok").length;
+  const shortage = evidenceCheckRows.filter(x => x.status === "shortage").length;
+  const other = evidenceCheckRows.filter(x => x.status === "excess" || x.status === "missing").length;
+
+  $("summaryTarget").textContent = String(evidenceCheckRows.length);
+  $("summaryOk").textContent = String(ok);
+  $("summaryShortage").textContent = String(shortage);
+  $("summaryOtherIssue").textContent = String(other);
+}
+
+async function runEvidenceCheck() {
+  if (!checkDirHandle) return;
+
+  const platforms = getPlatformFolderNames();
+  if (!platforms.length) {
+    $("checkStatus").className = "status warn";
+    $("checkStatus").textContent = "検査対象の端末・環境フォルダがありません。上の設定で1つ以上追加してください。";
+    return;
+  }
+
+  $("checkStatus").className = "status";
+  $("checkStatus").textContent = "検査中...";
+  $("recheckBtn").disabled = true;
+  evidenceCheckRows = [];
+  renderEvidenceCheckResults();
+
+  try {
+    const rootRange = parseEvidenceRangeName(checkDirHandle.name);
+    const startPath = rootRange ? [checkDirHandle.name] : [];
+    await scanEvidenceDirectoryTree(checkDirHandle, startPath, platforms, evidenceCheckRows, 0);
+
+    evidenceCheckRows.sort((a, b) => {
+      const p = a.path.localeCompare(b.path, "ja", {numeric:true});
+      return p || a.platform.localeCompare(b.platform, "ja");
+    });
+
+    renderEvidenceCheckResults();
+
+    if (!evidenceCheckRows.length) {
+      $("checkStatus").className = "status warn";
+      $("checkStatus").textContent = "検査対象が見つかりませんでした。『1~8』『9~12』『21』のようなIDフォルダを含む場所を選択してください。";
+      return;
+    }
+
+    const issueCount = evidenceCheckRows.filter(x => x.status !== "ok").length;
+    const rangeCount = new Set(evidenceCheckRows.map(x => x.path)).size;
+    $("checkStatus").className = issueCount ? "status warn" : "status ok";
+    $("checkStatus").textContent = issueCount
+      ? `検査完了: IDフォルダ ${rangeCount} 件 / 判定 ${evidenceCheckRows.length} 件 / 問題 ${issueCount} 件`
+      : `検査完了: IDフォルダ ${rangeCount} 件 / 判定 ${evidenceCheckRows.length} 件 / すべてOK`;
+  } catch (e) {
+    evidenceCheckRows = [];
+    renderEvidenceCheckResults();
+    $("checkStatus").className = "status warn";
+    $("checkStatus").textContent = "検査失敗: " + e.message;
+  } finally {
+    $("recheckBtn").disabled = !checkDirHandle;
+  }
+}
+
+function extractNames(sheet, mode) {
+  if (!sheet) return [];
+
+  if (mode === "scenario" && sheet.scenarioCol === null)
+    throw new Error("このシートにはシナリオID列がありません。");
+
+  if (mode === "id" && sheet.idCol === null)
+    throw new Error("このシートにはID列がありません。");
+
+  if (mode === "scenario_id" && (sheet.scenarioCol === null || sheet.idCol === null))
+    throw new Error("このシートにはシナリオIDとIDの両方が必要です。");
+
+  // IDモード: 期待値が入っている行を区切りとして "1~8" のように範囲化
+  if (mode === "id" && sheet.expectedCol !== null && sheet.expectedCol !== undefined) {
+    const out = [];
+    let rangeStart = null;
+
+    for (let i = sheet.headerIndex + 1; i < sheet.rows.length; i++) {
+      const row = sheet.rows[i];
+      const rawId = normalizeId(row.get(sheet.idCol) || "");
+      if (!/^\d+$/.test(rawId)) continue;
+
+      const idNum = parseInt(rawId, 10);
+      if (!Number.isFinite(idNum) || idNum <= 0) continue;
+
+      if (rangeStart === null) rangeStart = idNum;
+
+      const expected = row.get(sheet.expectedCol) || "";
+      if (isMeaningfulExpectedValue(expected)) {
+        const folderName = rangeStart === idNum
+          ? String(idNum)
+          : `${rangeStart}~${idNum}`;
+        out.push(sanitizeName(folderName));
+        rangeStart = idNum + 1;
+      }
+    }
+    return out;
+  }
+
+  const out = [];
+  const seen = new Set();
+
+  for (let i = sheet.headerIndex + 1; i < sheet.rows.length; i++) {
+    const row = sheet.rows[i];
+    let value = "";
+
+    if (mode === "scenario") {
+      value = normalizeId(row.get(sheet.scenarioCol) || "");
+    } else if (mode === "id") {
+      value = normalizeId(row.get(sheet.idCol) || "");
+    } else {
+      const s = normalizeId(row.get(sheet.scenarioCol) || "");
+      const id = normalizeId(row.get(sheet.idCol) || "");
+      if (!s && !id) continue;
+      value = s && id ? `${s}_${id}` : (s || id);
+    }
+
+    if (!value) continue;
+    const safe = sanitizeName(value);
+    if (!seen.has(safe)) {
+      seen.add(safe);
+      out.push(safe);
+    }
+  }
+
+  return out;
+}
+
+function chooseBestSheet(sheets, mode) {
+  if (!sheets?.length) return null;
+
+  if (mode === "id") {
+    return sheets.find(s => s.idCol !== null && s.expectedCol !== null)
+      || sheets.find(s => s.idCol !== null)
+      || null;
+  }
+  if (mode === "scenario") {
+    return sheets.find(s => s.scenarioCol !== null) || null;
+  }
+  if (mode === "scenario_id") {
+    return sheets.find(s => s.scenarioCol !== null && s.idCol !== null) || null;
+  }
+  return null;
+}
+
+function getParentName() {
+  const mode = $("parentMode").value;
+
+  if (mode === "source") {
+    if (sourceDirHandle?.name) return sanitizeName(sourceDirHandle.name);
+    if (selectedFileName) return sanitizeName(selectedFileName.replace(/\.(xlsx|xlsm)$/i, ""));
+    return "Evidence";
+  }
+
+  if (mode === "book") {
+    if (isBatchMode()) {
+      // 一括では各Excel名を1階層下に作るので、親は元フォルダ名を使う
+      if (sourceDirHandle?.name) return sanitizeName(sourceDirHandle.name);
+      return "Evidence";
+    }
+    return sanitizeName(selectedFileName.replace(/\.(xlsx|xlsm)$/i, ""));
+  }
+
+  const custom = $("customParent").value.trim();
+  if (!custom) throw new Error("任意の親フォルダ名を入力してください。");
+  return sanitizeName(custom);
+}
+
+function bookBaseName(filename) {
+  return sanitizeName(String(filename).replace(/\.(xlsx|xlsm)$/i, ""));
+}
+
+function makeUniqueBookFolderNames(items) {
+  const counts = new Map();
+  const result = new Map();
+
+  for (const item of items) {
+    const base = bookBaseName(item.name);
+    const key = base.toLowerCase();
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  const used = new Set();
+  for (const item of items) {
+    let base = bookBaseName(item.name);
+    const key = base.toLowerCase();
+
+    if ((counts.get(key) || 0) > 1) {
+      const ext = /\.xlsm$/i.test(item.name) ? "xlsm" : "xlsx";
+      base = sanitizeName(`${base}_${ext}`);
+    }
+
+    let candidate = base;
+    let n = 2;
+    while (used.has(candidate.toLowerCase())) {
+      candidate = sanitizeName(`${base}_${n++}`);
+    }
+    used.add(candidate.toLowerCase());
+    result.set(item.name, candidate);
+  }
+
+  return result;
+}
+
+function buildSinglePlan() {
+  const sheet = getCurrentSheet();
+  if (!sheet) throw new Error("対象シートを選択してください。");
+
+  const names = extractNames(sheet, selectedSubMode());
+  return {
+    mode: "single",
+    rootName: getParentName(),
+    items: [{
+      fileName: selectedFileName,
+      folderName: null,
+      sheet,
+      names
+    }],
+    skipped: []
+  };
+}
+
+function buildBatchPlan() {
+  if (!batchBooks.length) throw new Error("フォルダ内のExcelを一括読み込みしてください。");
+
+  const mode = selectedSubMode();
+  const usable = [];
+  const skipped = [];
+
+  for (const book of batchBooks) {
+    if (book.error) {
+      skipped.push(`${book.name}: 読み込み失敗`);
+      continue;
+    }
+
+    const sheet = chooseBestSheet(book.sheets, mode);
+    if (!sheet) {
+      skipped.push(`${book.name}: 対象列を持つシートなし`);
+      continue;
+    }
+
+    let names = [];
+    try {
+      names = extractNames(sheet, mode);
+    } catch (e) {
+      skipped.push(`${book.name}: ${e.message}`);
+      continue;
+    }
+
+    if (!names.length) {
+      skipped.push(`${book.name}: 作成対象なし`);
+      continue;
+    }
+
+    usable.push({
+      fileName: book.name,
+      sheets: book.sheets,
+      sheet,
+      names
+    });
+  }
+
+  const folderNames = makeUniqueBookFolderNames(usable);
+  usable.forEach(x => x.folderName = folderNames.get(x.fileName));
+
+  return {
+    mode: "batch",
+    rootName: getParentName(),
+    items: usable,
+    skipped
+  };
+}
+
+function buildCurrentPlan() {
+  return isBatchMode() ? buildBatchPlan() : buildSinglePlan();
+}
+
+function renderPlanPreview(plan) {
+  const platforms = getPlatformFolderNames();
+  const lines = [];
+  lines.push(`${plan.rootName}/`);
+
+  if (plan.mode === "single") {
+    const item = plan.items[0];
+    const limit = Math.min(item.names.length, 40);
+
+    for (let i = 0; i < limit; i++) {
+      const last = i === limit - 1 && item.names.length <= limit;
+      lines.push(`  ${last ? "└─" : "├─"} ${item.names[i]}/`);
+      platforms.forEach((p, j) => {
+        const pLast = j === platforms.length - 1;
+        const prefix = last ? "     " : "  │  ";
+        lines.push(`${prefix}${pLast ? "└─" : "├─"} ${p}/`);
+      });
+    }
+    if (item.names.length > limit) {
+      lines.push(`  └─ ... ほか ${item.names.length - limit} 件`);
+    }
+
+    lines.push("");
+    lines.push(`対象Excel: ${item.fileName}`);
+    lines.push(`対象シート: ${item.sheet.name}`);
+    lines.push(`ID/シナリオフォルダ: ${item.names.length} 件`);
+  } else {
+    const bookLimit = Math.min(plan.items.length, 15);
+
+    for (let b = 0; b < bookLimit; b++) {
+      const item = plan.items[b];
+      const bookLast = b === bookLimit - 1 && plan.items.length <= bookLimit;
+      lines.push(`  ${bookLast ? "└─" : "├─"} ${item.folderName}/`);
+
+      const nameLimit = Math.min(item.names.length, 10);
+      for (let i = 0; i < nameLimit; i++) {
+        const idLast = i === nameLimit - 1 && item.names.length <= nameLimit;
+        const stem = bookLast ? "     " : "  │  ";
+        lines.push(`${stem}${idLast ? "└─" : "├─"} ${item.names[i]}/`);
+
+        const platformStem = stem + (idLast ? "     " : "│    ");
+        platforms.forEach((p, j) => {
+          lines.push(`${platformStem}${j === platforms.length - 1 ? "└─" : "├─"} ${p}/`);
+        });
+      }
+
+      if (item.names.length > nameLimit) {
+        const stem = bookLast ? "     " : "  │  ";
+        lines.push(`${stem}└─ ... ほか ${item.names.length - nameLimit} 件`);
+      }
+    }
+
+    if (plan.items.length > bookLimit) {
+      lines.push(`  └─ ... ほか ${plan.items.length - bookLimit} Excel`);
+    }
+
+    lines.push("");
+    lines.push(`一括対象Excel: ${plan.items.length} 件`);
+    lines.push(`スキップ: ${plan.skipped.length} 件`);
+    for (const item of plan.items) {
+      lines.push(`  ${item.fileName} → シート「${item.sheet.name}」 / ${item.names.length} フォルダ`);
+    }
+    if (plan.skipped.length) {
+      lines.push("");
+      lines.push("スキップ内容:");
+      plan.skipped.slice(0, 20).forEach(x => lines.push(`  - ${x}`));
+      if (plan.skipped.length > 20) lines.push(`  - ... ほか ${plan.skipped.length - 20} 件`);
+    }
+  }
+
+  lines.push("");
+  lines.push(`端末別サブフォルダ: ${platforms.length ? platforms.join(" / ") : "作成しない"}`);
+
+  return lines.join("\n");
+}
+
+function refreshPreview() {
+  const preview = $("preview");
+
+  try {
+    if (!isBatchMode() && !parsedSheets.length) {
+      preview.textContent = "テスト仕様書を読み込むと、ここに作成予定フォルダが表示されます。";
+      $("createDirectBtn").disabled = true;
+      $("downloadZipBtn").disabled = true;
+      return;
+    }
+    if (isBatchMode() && !batchBooks.length) {
+      preview.textContent = "フォルダ内の全Excelを一括読み込みすると、ここに作成予定フォルダが表示されます。";
+      $("createDirectBtn").disabled = true;
+      $("downloadZipBtn").disabled = true;
+      return;
+    }
+
+    const plan = buildCurrentPlan();
+    preview.textContent = renderPlanPreview(plan);
+
+    const hasTargets = plan.items.some(x => x.names.length > 0);
+    $("createDirectBtn").disabled = !hasTargets;
+    $("downloadZipBtn").disabled = !hasTargets;
+  } catch (e) {
+    preview.textContent = "プレビューできません: " + e.message;
+    $("createDirectBtn").disabled = true;
+    $("downloadZipBtn").disabled = true;
+  }
+}
+
+async function loadSelectedFile(file) {
+  selectedFile = file;
+  selectedFileName = file.name;
+
+  $("loadStatus").className = "status";
+  $("loadStatus").textContent = "読み込み中...";
+
+  try {
+    parsedSheets = await parseXlsx(file);
+
+    $("sheetSelect").innerHTML = "";
+    parsedSheets.forEach((s, i) => {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      const found = [
+        s.scenarioCol !== null ? "シナリオID" : null,
+        s.idCol !== null ? "ID" : null,
+        s.expectedCol !== null ? "期待値" : null
+      ].filter(Boolean).join(" / ");
+      opt.textContent = `${s.name}  [${found}]`;
+      $("sheetSelect").appendChild(opt);
+    });
+
+    const preferred = parsedSheets.findIndex(s => s.scenarioCol !== null && s.idCol !== null);
+    $("sheetSelect").value = String(preferred >= 0 ? preferred : 0);
+    $("sheetSelect").disabled = false;
+
+    $("loadStatus").className = "status ok";
+    $("loadStatus").textContent =
+      `単一読み込み完了\nファイル: ${file.name}\n検出シート: ${parsedSheets.length}`;
+
+    refreshPreview();
+  } catch (e) {
+    parsedSheets = [];
+    $("sheetSelect").innerHTML = "";
+    $("sheetSelect").disabled = true;
+    $("loadStatus").className = "status warn";
+    $("loadStatus").textContent = "読み込み失敗: " + e.message;
+    refreshPreview();
+  }
+}
+
+async function loadAllFolderBooks() {
+  if (!folderBooks.length) {
+    $("loadStatus").className = "status warn";
+    $("loadStatus").textContent = "先にExcelが入っているフォルダを選択してください。";
+    return;
+  }
+
+  batchBooks = [];
+  $("loadStatus").className = "status";
+  $("loadStatus").textContent = `一括読み込み中... 0 / ${folderBooks.length}`;
+
+  for (let i = 0; i < folderBooks.length; i++) {
+    const item = folderBooks[i];
+    try {
+      const file = await item.handle.getFile();
+      const sheets = await parseXlsx(file);
+      batchBooks.push({name:item.name, sheets, error:null});
+    } catch (e) {
+      batchBooks.push({name:item.name, sheets:[], error:e.message});
+    }
+    $("loadStatus").textContent = `一括読み込み中... ${i + 1} / ${folderBooks.length}`;
+  }
+
+  const ok = batchBooks.filter(x => !x.error).length;
+  const ng = batchBooks.length - ok;
+
+  $("loadStatus").className = ng ? "status warn" : "status ok";
+  $("loadStatus").textContent =
+    `一括読み込み完了\nExcel: ${batchBooks.length} 件\n読み込み成功: ${ok} 件\n読み込み失敗: ${ng} 件`;
+
+  refreshPreview();
+}
+
+function updateModeUI() {
+  const batch = isBatchMode();
+
+  $("singleModeNote").classList.toggle("hidden", batch);
+  $("batchModeNote").classList.toggle("hidden", !batch);
+  $("directFileRow").classList.toggle("hidden", batch);
+  $("sheetRow").classList.toggle("hidden", batch);
+  $("batchStructureNote").classList.toggle("hidden", !batch);
+
+  $("singleBookRow").classList.toggle("hidden", batch || !folderBooks.length);
+  $("batchBookRow").classList.toggle("hidden", !batch || !folderBooks.length);
+
+  const bookOption = $("parentMode").querySelector('option[value="book"]');
+  if (batch) {
+    if ($("parentMode").value === "book") $("parentMode").value = "source";
+    bookOption.disabled = true;
+  } else {
+    bookOption.disabled = false;
+  }
+
+  $("customParentRow").classList.toggle(
+    "hidden",
+    $("parentMode").value !== "custom"
+  );
+
+  refreshPreview();
+}
+
+$("chooseDirBtn").addEventListener("click", async () => {
+  if (!window.showDirectoryPicker) {
+    alert("このブラウザではフォルダ選択が利用できません。Chrome / Edge の最新版を使用してください。");
+    return;
+  }
+
+  try {
+    sourceDirHandle = await window.showDirectoryPicker({mode:"read"});
+    $("sourceDirName").value = sourceDirHandle.name;
+
+    folderBooks = [];
+    for await (const [name, handle] of sourceDirHandle.entries()) {
+      if (handle.kind === "file" && /\.(xlsx|xlsm)$/i.test(name) && !name.startsWith("~$")) {
+        folderBooks.push({name, handle});
+      }
+    }
+    folderBooks.sort((a,b) => a.name.localeCompare(b.name, "ja"));
+
+    $("bookSelect").innerHTML = "";
+    folderBooks.forEach((b, i) => {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = b.name;
+      $("bookSelect").appendChild(opt);
+    });
+
+    $("batchBookCount").value = `${folderBooks.length} 件のExcelを検出`;
+
+    // フォルダ変更時は以前の読み込み結果をリセット
+    parsedSheets = [];
+    batchBooks = [];
+    selectedFile = null;
+    selectedFileName = "";
+    $("sheetSelect").innerHTML = "";
+    $("sheetSelect").disabled = true;
+
+    if (!folderBooks.length) {
+      $("loadStatus").className = "status warn";
+      $("loadStatus").textContent = "選択フォルダ直下に .xlsx / .xlsm が見つかりませんでした。";
+    } else if (isBatchMode()) {
+      $("loadStatus").className = "status";
+      $("loadStatus").textContent = `${folderBooks.length} 件のExcelを検出しました。「一括読込」を押してください。`;
+    } else {
+      $("loadStatus").className = "status";
+      $("loadStatus").textContent = `${folderBooks.length} 件のExcelを検出しました。対象ファイルを選択してください。`;
+    }
+
+    updateModeUI();
+  } catch (e) {
+    if (e.name !== "AbortError") {
+      $("loadStatus").className = "status warn";
+      $("loadStatus").textContent = "フォルダ選択に失敗: " + e.message;
+    }
+  }
+});
+
+$("loadBookBtn").addEventListener("click", async () => {
+  const item = folderBooks[parseInt($("bookSelect").value, 10)];
+  if (!item) return;
+  const file = await item.handle.getFile();
+  await loadSelectedFile(file);
+});
+
+$("loadAllBooksBtn").addEventListener("click", loadAllFolderBooks);
+
+$("fileInput").addEventListener("change", async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // 直接ファイル選択は単一モード
+  document.querySelector('input[name="processMode"][value="single"]').checked = true;
+  sourceDirHandle = null;
+  folderBooks = [];
+  batchBooks = [];
+  $("sourceDirName").value = "";
+  updateModeUI();
+  await loadSelectedFile(file);
+});
+
+document.querySelectorAll('input[name="processMode"]').forEach(x => {
+  x.addEventListener("change", updateModeUI);
+});
+
+$("sheetSelect").addEventListener("change", refreshPreview);
+$("parentMode").addEventListener("change", () => {
+  $("customParentRow").classList.toggle("hidden", $("parentMode").value !== "custom");
+  refreshPreview();
+});
+$("customParent").addEventListener("input", refreshPreview);
+document.querySelectorAll('input[name="submode"]').forEach(x => x.addEventListener("change", refreshPreview));
+
+$("addPlatformBtn").addEventListener("click", addPlatformFolder);
+$("newPlatformName").addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    addPlatformFolder();
+  }
+});
+
+$("chooseCheckDirBtn").addEventListener("click", async () => {
+  if (!window.showDirectoryPicker) {
+    alert("エビデンス枚数チェックにはフォルダ選択機能が必要です。Chrome / Edge の最新版を使用してください。");
+    return;
+  }
+
+  try {
+    checkDirHandle = await window.showDirectoryPicker({mode:"read"});
+    $("checkFolderName").textContent = checkDirHandle.name;
+    $("checkFolderName").title = checkDirHandle.name;
+    $("recheckBtn").disabled = false;
+    await runEvidenceCheck();
+  } catch (e) {
+    if (e.name !== "AbortError") {
+      $("checkStatus").className = "status warn";
+      $("checkStatus").textContent = "検査フォルダ選択に失敗: " + e.message;
+    }
+  }
+});
+
+$("recheckBtn").addEventListener("click", runEvidenceCheck);
+$("issuesOnlyCheck").addEventListener("change", renderEvidenceCheckResults);
+
+renderPlatformFolders();
+updateModeUI();
+
+async function writeLogFile(parentHandle, plan, platforms) {
+  const logHandle = await parentHandle.getFileHandle("_folder_creation_log.txt", {create:true});
+  const writable = await logHandle.createWritable();
+
+  const lines = [
+    `Mode         : ${plan.mode}`,
+    `Parent       : ${plan.rootName}`,
+    `Excel count  : ${plan.items.length}`,
+    `Platforms    : ${platforms.length ? platforms.join(", ") : "(none)"}`,
+    ""
+  ];
+
+  for (const item of plan.items) {
+    lines.push(`[${item.fileName}]`);
+    lines.push(`Sheet        : ${item.sheet.name}`);
+    lines.push(`Folder count : ${item.names.length}`);
+    item.names.forEach(x => lines.push(`  ${x}`));
+    lines.push("");
+  }
+
+  if (plan.skipped?.length) {
+    lines.push("[Skipped]");
+    plan.skipped.forEach(x => lines.push(`  ${x}`));
+  }
+
+  await writable.write(new Blob(["\uFEFF" + lines.join("\r\n")], {type:"text/plain;charset=utf-8"}));
+  await writable.close();
+}
+
+$("createDirectBtn").addEventListener("click", async () => {
+  if (!window.showDirectoryPicker) {
+    alert("直接フォルダ作成はこのブラウザでは利用できません。ZIP保存を使ってください。");
+    return;
+  }
+
+  try {
+    const plan = buildCurrentPlan();
+    const platforms = getPlatformFolderNames();
+
+    const outHandle = await window.showDirectoryPicker({mode:"readwrite"});
+    const parentHandle = await outHandle.getDirectoryHandle(plan.rootName, {create:true});
+
+    for (const item of plan.items) {
+      let baseHandle = parentHandle;
+
+      if (plan.mode === "batch") {
+        baseHandle = await parentHandle.getDirectoryHandle(item.folderName, {create:true});
+      }
+
+      for (const name of item.names) {
+        const evidenceHandle = await baseHandle.getDirectoryHandle(name, {create:true});
+        for (const platform of platforms) {
+          await evidenceHandle.getDirectoryHandle(platform, {create:true});
+        }
+      }
+    }
+
+    await writeLogFile(parentHandle, plan, platforms);
+
+    const totalFolders = plan.items.reduce((n, x) => n + x.names.length, 0);
+    $("resultStatus").className = "status ok";
+    $("resultStatus").textContent =
+      `完了しました。\n処理Excel: ${plan.items.length} 件\nID/シナリオ: ${totalFolders} 件\n端末別: ${platforms.length ? platforms.join(" / ") : "なし"}`
+      + (plan.skipped.length ? `\nスキップ: ${plan.skipped.length} 件` : "");
+  } catch (e) {
+    if (e.name === "AbortError") return;
+    $("resultStatus").className = "status warn";
+    $("resultStatus").textContent = "作成失敗: " + e.message;
+  }
+});
+
+$("downloadZipBtn").addEventListener("click", () => {
+  try {
+    const plan = buildCurrentPlan();
+    const platforms = getPlatformFolderNames();
+    const entries = [];
+
+    entries.push({name:`${plan.rootName}/`, data:new Uint8Array(0)});
+
+    for (const item of plan.items) {
+      const base = plan.mode === "batch"
+        ? `${plan.rootName}/${item.folderName}`
+        : plan.rootName;
+
+      if (plan.mode === "batch") {
+        entries.push({name:`${base}/`, data:new Uint8Array(0)});
+      }
+
+      for (const name of item.names) {
+        entries.push({name:`${base}/${name}/`, data:new Uint8Array(0)});
+        for (const platform of platforms) {
+          entries.push({name:`${base}/${name}/${platform}/`, data:new Uint8Array(0)});
+        }
+      }
+    }
+
+    const logLines = [
+      `Mode         : ${plan.mode}`,
+      `Parent       : ${plan.rootName}`,
+      `Excel count  : ${plan.items.length}`,
+      `Platforms    : ${platforms.length ? platforms.join(", ") : "(none)"}`,
+      ""
+    ];
+
+    for (const item of plan.items) {
+      logLines.push(`[${item.fileName}]`);
+      logLines.push(`Sheet        : ${item.sheet.name}`);
+      logLines.push(`Folder count : ${item.names.length}`);
+      item.names.forEach(x => logLines.push(`  ${x}`));
+      logLines.push("");
+    }
+
+    if (plan.skipped?.length) {
+      logLines.push("[Skipped]");
+      plan.skipped.forEach(x => logLines.push(`  ${x}`));
+    }
+
+    entries.push({
+      name:`${plan.rootName}/_folder_creation_log.txt`,
+      data:new TextEncoder().encode("\uFEFF" + logLines.join("\r\n"))
+    });
+
+    const blob = makeStoredZip(entries);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${plan.rootName}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    const totalFolders = plan.items.reduce((n, x) => n + x.names.length, 0);
+    $("resultStatus").className = "status ok";
+    $("resultStatus").textContent =
+      `ZIPを作成しました。\n処理Excel: ${plan.items.length} 件\nID/シナリオ: ${totalFolders} 件\n端末別: ${platforms.length ? platforms.join(" / ") : "なし"}`
+      + (plan.skipped.length ? `\nスキップ: ${plan.skipped.length} 件` : "");
+  } catch (e) {
+    $("resultStatus").className = "status warn";
+    $("resultStatus").textContent = "ZIP作成失敗: " + e.message;
+  }
+});
+
+if (!window.showDirectoryPicker) {
+  $("chooseCheckDirBtn").disabled = true;
+  $("recheckBtn").disabled = true;
+  $("checkStatus").className = "status warn";
+  $("checkStatus").textContent = "このブラウザではフォルダ検査を利用できません。Chrome / Edge の最新版を使用してください。";
+  $("dirRow").classList.add("hidden");
+  document.querySelector('input[name="processMode"][value="batch"]').disabled = true;
+  $("batchModeNote").textContent = "このブラウザではフォルダ一括読み込みを利用できません。Chrome / Edge の最新版を使用してください。";
+  $("parentMode").querySelector('option[value="source"]').textContent = "テスト仕様書フォルダ名（直接選択時はExcel名）";
+}
+
+</script>
+</body>
+</html>
