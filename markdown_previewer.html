@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarkFlow - リアルタイム・マークダウンプレビュー</title>
+
+  <!-- Google Fonts: Inter, Noto Sans JP, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS (with Typography plugin for rich Markdown rendering) -->
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans JP"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', '"Noto Sans JP"', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Marked.js (Markdown Parser) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- DOMPurify (XSS Sanitizer) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+  <!-- Highlight.js (Code Block Syntax Highlighting) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- Mermaid.js (Flowchart & UML Diagrams) -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* Mermaid図表のレスポンシブ・スクロール調整 */
+    .mermaid-wrapper {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    .mermaid svg {
+      height: auto;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex flex-col overflow-hidden transition-colors duration-200 select-none">
+
+  <!-- ==================== ヘッダー ==================== -->
+  <header class="flex-none bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2 z-20">
+    <!-- 左側: ロゴ & ドキュメント名 -->
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
+        <!-- Markdown Logo SVG -->
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="3" />
+          <path d="M6 15V9l3 3 3-3v6" />
+          <path d="M18 15v-6" />
+          <path d="M15.5 12.5L18 15l2.5-2.5" />
+        </svg>
+      </div>
+      <div class="min-w-0 flex flex-col">
+        <div class="flex items-center gap-1.5">
+          <input
+            id="docTitleInput"
+            type="text"
+            value="README.md"
+            aria-label="ファイル名"
+            class="bg-transparent font-semibold text-sm sm:text-base text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 rounded-lg px-1.5 py-0.5 w-32 sm:w-48 truncate"
+          />
+          <span id="saveStatus" class="hidden sm:inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+            自動保存済
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中央: 表示モード切替 (デスクトップ: 分割 / エディタ / プレビュー, モバイル: 編集 / プレビュー) -->
+    <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+      <!-- デスクトップ専用: 分割表示 -->
+      <button
+        type="button"
+        data-mode="split"
+        onclick="setViewMode('split')"
+        class="view-mode-btn hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+        title="分割表示"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="12" y1="3" x2="12" y2="21" />
+        </svg>
+        <span>分割</span>
+      </button>
+
+      <!-- エディタのみ -->
+      <button
+        type="button"
+        data-mode="editor"
+        onclick="setViewMode('editor')"
+        class="view-mode-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+        title="エディタ表示"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+        <span>編集</span>
+      </button>
+
+      <!-- プレビューのみ -->
+      <button
+        type="button"
+        data-mode="preview"
+        onclick="setViewMode('preview')"
+        class="view-mode-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+        title="プレビュー表示"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span>プレビュー</span>
+      </button>
+    </div>
+
+    <!-- 右側: アクションボタン群 -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- ファイル読み込み -->
+      <input type="file" id="fileInput" accept=".md,.markdown,.txt" class="hidden" onchange="handleFileImport(event)" />
+      <button
+        type="button"
+        onclick="document.getElementById('fileInput').click()"
+        class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        title="Markdownファイルを読み込む"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      </button>
+
+      <!-- HTMLコピー -->
+      <button
+        type="button"
+        onclick="copyRenderedHtml()"
+        class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition-colors"
+        title="変換後のHTMLをコピー"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+        <span>HTMLコピー</span>
+      </button>
+
+      <!-- エクスポートドロップダウン -->
+      <div class="relative" id="exportMenuContainer">
+        <button
+          type="button"
+          onclick="toggleExportMenu()"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span class="hidden sm:inline">保存 / 出力</span>
+        </button>
+
+        <!-- ドロップダウンメニュー -->
+        <div
+          id="exportMenu"
+          class="hidden absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-30 text-xs"
+        >
+          <button
+            type="button"
+            onclick="downloadMarkdown(); toggleExportMenu(false);"
+            class="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors"
+          >
+            <span class="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">M</span>
+            <div>
+              <div class="font-medium text-slate-800 dark:text-slate-100">Markdown (.md)</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">ソースファイルをダウンロード</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onclick="downloadHtml(); toggleExportMenu(false);"
+            class="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors"
+          >
+            <span class="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">&lt;/&gt;</span>
+            <div>
+              <div class="font-medium text-slate-800 dark:text-slate-100">HTMLファイル (.html)</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">スタイル付きWebページ出力</div>
+            </div>
+          </button>
+          <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>
+          <button
+            type="button"
+            onclick="copyMarkdownSource(); toggleExportMenu(false);"
+            class="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700/70 text-slate-700 dark:text-slate-200"
+          >
+            <span>Markdownをコピー</span>
+          </button>
+          <button
+            type="button"
+            onclick="copyRenderedHtml(); toggleExportMenu(false);"
+            class="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700/70 text-slate-700 dark:text-slate-200"
+          >
+            <span>HTMLコードをコピー</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ダークモード切替 -->
+      <button
+        type="button"
+        id="themeToggleBtn"
+        onclick="toggleTheme()"
+        class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        title="テーマ切替 (ライト / ダーク)"
+        aria-label="テーマ切替"
+      >
+        <!-- Sun Icon (shown in dark mode) -->
+        <svg id="sunIcon" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+        <!-- Moon Icon (shown in light mode) -->
+        <svg id="moonIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 書式ツールバー ==================== -->
+  <div id="editorToolbar" class="flex-none bg-slate-50/90 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-5 py-1.5 flex items-center justify-between gap-2 overflow-x-auto">
+    <div class="flex items-center gap-1 shrink-0">
+      <!-- 見出し -->
+      <button type="button" onclick="insertLinePrefix('# ')" class="toolbar-btn px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="見出し1 (H1)">H1</button>
+      <button type="button" onclick="insertLinePrefix('## ')" class="toolbar-btn px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="見出し2 (H2)">H2</button>
+      <button type="button" onclick="insertLinePrefix('### ')" class="toolbar-btn px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="見出し3 (H3)">H3</button>
+
+      <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+      <!-- 太字 / 斜体 / 打ち消し線 -->
+      <button type="button" onclick="wrapSelection('**', '**', '太字テキスト')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="太字 (Bold)">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+      </button>
+      <button type="button" onclick="wrapSelection('*', '*', '斜体テキスト')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="斜体 (Italic)">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+      </button>
+      <button type="button" onclick="wrapSelection('~~', '~~', '打ち消しテキスト')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="打ち消し線">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+      </button>
+
+      <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+      <!-- リスト / チェックリスト / 引用 -->
+      <button type="button" onclick="insertLinePrefix('- ')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="箇条書きリスト">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+      <button type="button" onclick="insertLinePrefix('1. ')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="番号付きリスト">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+      </button>
+      <button type="button" onclick="insertLinePrefix('- [ ] ')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="タスクリスト">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </button>
+      <button type="button" onclick="insertLinePrefix('> ')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="引用">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+      </button>
+
+      <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+      <!-- インラインコード / コードブロック / リンク / テーブル / 水平線 -->
+      <button type="button" onclick="wrapSelection('`', '`', 'code')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="インラインコード">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </button>
+      <button type="button" onclick="insertCodeBlock()" class="toolbar-btn px-2 py-1.5 rounded-lg text-xs font-mono font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="コードブロック">
+        ```
+      </button>
+      <button type="button" onclick="wrapSelection('[', '](https://example.com)', 'リンクテキスト')" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="リンク挿入">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </button>
+      <button type="button" onclick="insertTable()" class="toolbar-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="テーブル挿入">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      </button>
+      <button type="button" onclick="insertBlockText('\n---\n')" class="toolbar-btn px-2 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800" title="水平線">
+        ―
+      </button>
+
+      <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+      <!-- UML / Mermaid 図表挿入ボタン -->
+      <div class="relative" id="diagramMenuContainer">
+        <button
+          type="button"
+          id="diagramMenuBtn"
+          onclick="toggleDiagramMenu()"
+          class="toolbar-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-950/70 transition-colors"
+          title="フローチャート・UML図を挿入"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="6" height="6" rx="1" />
+            <rect x="15" y="15" width="6" height="6" rx="1" />
+            <rect x="15" y="3" width="6" height="6" rx="1" />
+            <path d="M9 6h6" />
+            <path d="M6 9v6a3 3 0 0 0 3 3h6" />
+          </svg>
+          <span>UML図</span>
+          <svg class="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 右側ツール: スクロール同期 / サンプル読込 / クリア -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button
+        type="button"
+        id="syncScrollBtn"
+        onclick="toggleSyncScroll()"
+        class="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60 transition-colors"
+        title="エディタとプレビューのスクロール位置を同期"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+          <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+        </svg>
+        <span>スクロール同期</span>
+      </button>
+
+      <button
+        type="button"
+        onclick="confirmResetSample()"
+        class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+      >
+        サンプルに戻す
+      </button>
+
+      <button
+        type="button"
+        onclick="confirmClearEditor()"
+        class="px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+      >
+        クリア
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== メインワークスペース (エディタ & プレビュー) ==================== -->
+  <main class="flex-1 flex min-h-0 overflow-hidden relative">
+    <!-- 左ペイン: Markdown エディタ -->
+    <section id="editorPane" class="flex-1 flex flex-col min-w-0 min-h-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800">
+      <div class="flex-none px-4 py-1.5 bg-slate-50/70 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <span>MARKDOWN エディタ</span>
+        <span class="hidden sm:inline">Tabキーでインデント挿入</span>
+      </div>
+      <textarea
+        id="markdownInput"
+        spellcheck="false"
+        placeholder="ここにMarkdownを入力してください..."
+        class="flex-1 w-full h-full resize-none p-4 sm:p-6 bg-transparent text-slate-800 dark:text-slate-100 font-mono text-sm sm:text-[15px] leading-relaxed focus:outline-none select-text overflow-y-auto"
+      ></textarea>
+    </section>
+
+    <!-- 右ペイン: HTML プレビュー -->
+    <section id="previewPane" class="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50/50 dark:bg-slate-900/40">
+      <div class="flex-none px-4 py-1.5 bg-slate-50/70 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <span>ライブプレビュー</span>
+        <span>GFM (GitHub Flavored Markdown) 対応</span>
+      </div>
+      <div id="previewScrollContainer" class="flex-1 overflow-y-auto p-5 sm:p-8 select-text">
+        <article
+          id="markdownPreview"
+          class="prose prose-slate dark:prose-invert max-w-3xl mx-auto
+                 prose-headings:font-bold prose-headings:tracking-tight
+                 prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline
+                 prose-code:before:content-none prose-code:after:content-none
+                 prose-code:bg-slate-200/70 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[0.875em] prose-code:font-mono
+                 prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-slate-800
+                 prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50/40 dark:prose-blockquote:bg-indigo-950/20 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
+                 prose-table:border-collapse prose-th:bg-slate-100 dark:prose-th:bg-slate-800/80 prose-th:p-2.5 prose-td:p-2.5 prose-tr:border-b prose-tr:border-slate-200 dark:prose-tr:border-slate-800
+                 prose-img:rounded-xl prose-img:shadow-md"
+        ></article>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== ステータスバー (フッター) ==================== -->
+  <footer class="flex-none bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-1.5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+    <div class="flex items-center gap-4">
+      <span>文字数: <strong id="charCount" class="font-semibold text-slate-700 dark:text-slate-200">0</strong></span>
+      <span>行数: <strong id="lineCount" class="font-semibold text-slate-700 dark:text-slate-200">0</strong></span>
+      <span class="hidden sm:inline">読了目安: 約 <strong id="readTime" class="font-semibold text-slate-700 dark:text-slate-200">1</strong> 分</span>
+    </div>
+    <div class="text-[11px] text-slate-400 dark:text-slate-500">
+      MarkFlow Markdown Studio
+    </div>
+  </footer>
+
+  <!-- ==================== カスタム確認モーダル (confirm()の代替) ==================== -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+      <h3 id="modalTitle" class="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">確認</h3>
+      <p id="modalMessage" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">この操作を実行してもよろしいですか？</p>
+      <div class="flex items-center justify-end gap-2.5">
+        <button
+          type="button"
+          onclick="closeConfirmModal()"
+          class="px-4 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+        >
+          キャンセル
+        </button>
+        <button
+          type="button"
+          id="modalConfirmBtn"
+          class="px-4 py-2 rounded-xl text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors"
+        >
+          実行する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== トースト通知 (alert()の代替) ==================== -->
+  <div
+    id="toastContainer"
+    class="fixed bottom-12 right-4 z-50 flex flex-col gap-2 pointer-events-none"
+  ></div>
+
+  <!-- ==================== UML / Mermaid 図表挿入ドロップダウン (ツールバーのoverflowに隠れないよう独立配置) ==================== -->
+  <div
+    id="diagramMenu"
+    class="hidden fixed w-60 max-h-[65vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 py-1.5 z-50 text-xs"
+  >
+    <div class="px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-700/70">
+      Mermaid ダイアグラム挿入
+    </div>
+    <button type="button" onclick="insertDiagramTemplate('flowchart')" class="w-full px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between transition-colors">
+      <span class="font-medium text-slate-700 dark:text-slate-200">フローチャート</span>
+      <span class="text-[10px] font-mono text-slate-400">flowchart</span>
+    </button>
+    <button type="button" onclick="insertDiagramTemplate('sequence')" class="w-full px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between transition-colors">
+      <span class="font-medium text-slate-700 dark:text-slate-200">シーケンス図</span>
+      <span class="text-[10px] font-mono text-slate-400">sequence</span>
+    </button>
+    <button type="button" onclick="insertDiagramTemplate('class')" class="w-full px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between transition-colors">
+      <span class="font-medium text-slate-700 dark:text-slate-200">クラス図</span>
+      <span class="text-[10px] font-mono text-slate-400">classDiagram</span>
+    </button>
+    <button type="button" onclick="insertDiagramTemplate('state')" class="w-full px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between transition-colors">
+      <span class="font-medium text-slate-700 dark:text-slate-200">状態遷移図</span>
+      <span class="text-[10px] font-mono text-slate-400">stateDiagram</span>
+    </button>
+    <button type="button" onclick="insertDiagramTemplate('er')" class="w-full px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between transition-colors">
+      <span class="font-medium text-slate-700 dark:text-slate-200">ER図 (データベース)</span>
+      <span class="text-[10px] font-mono text-slate-400">erDiagram</span>
+    </button>
+    <button type="button" onclick="insertDiagramTemplate('gantt')" class="w-full px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between transition-colors">
+      <span class="font-medium text-slate-700 dark:text-slate-200">ガントチャート</span>
+      <span class="text-[10px] font-mono text-slate-400">gantt</span>
+    </button>
+  </div>
+
+  <!-- ==================== JavaScript ロジック ==================== -->
+  <script>
+    const FENCE = '\x60\x60\x60';
+
+    // サンプルMarkdownテンプレート
+    const SAMPLE_MARKDOWN = `# MarkFlow へようこそ ✨
+
+**MarkFlow** は、ブラウザ上で快適に動作するリアルタイム・マークダウンプレビューサイトです。
+左側のエディタに入力した内容が、右側のプレビュー画面に即座に反映されます。
+
+---
+
+## 主な機能
+
+- **リアルタイム変換**: 入力と同時に美しくフォーマットされたプレビューを表示
+- **UML・フローチャート対応**: \`mermaid\` 記法でフローチャートやシーケンス図を描画
+- **シンタックスハイライト**: プログラミング言語を自動判定して色分け表示
+- **書式ツールバー**: ボタンひとつで見出し・太字・リスト・UML図・表などを簡単挿入
+- **ダークモード対応**: 右上の月/太陽アイコンで目に優しいテーマへ切替
+- **エクスポート & 自動保存**: \`.md\` や \`.html\` 形式での保存、ブラウザへの自動保存に対応
+
+---
+
+## フローチャート & UML図 (Mermaid対応)
+
+${FENCE}mermaid
+flowchart TD
+    A[Markdownを入力] --> B{Mermaid記法?}
+    B -- はい --> C[UML・フローチャートを描画]
+    B -- いいえ --> D[HTML・コードハイライト変換]
+    C --> E[リアルタイムプレビュー表示]
+    D --> E
+${FENCE}
+
+${FENCE}mermaid
+sequenceDiagram
+    actor User as ユーザー
+    participant Editor as MarkFlowエディタ
+    participant Preview as プレビュー画面
+
+    User->>Editor: テキスト・UML図を記述
+    Editor->>Preview: リアルタイム解析 & サニタイズ
+    Preview-->>User: 美しいドキュメントを表示
+${FENCE}
+
+---
+
+## タスクリスト (GFM対応)
+
+- [x] マークダウンエディタの起動
+- [x] リアルタイムプレビューの確認
+- [ ] オリジナルのドキュメントを作成してみる
+- [ ] HTMLまたはMarkdown形式でダウンロードする
+
+---
+
+## コードブロックのハイライト例
+
+${FENCE}javascript
+// クイックソートの実装例
+function quickSort(arr) {
+  if (arr.length <= 1) return arr;
+
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const left = arr.filter(x => x < pivot);
+  const middle = arr.filter(x => x === pivot);
+  const right = arr.filter(x => x > pivot);
+
+  return [...quickSort(left), ...middle, ...quickSort(right)];
+}
+
+console.log(quickSort([34, 7, 23, 32, 5, 62]));
+${FENCE}
+
+---
+
+## テーブル (表組み) の表現
+
+| ショートカット / 操作 | 機能説明 | 対応状況 |
+| :--- | :--- | :---: |
+| \`Tab\` キー | 半角スペース2つ分のインデント挿入 | ✅ |
+| ツールバー操作 | 選択範囲を装飾記号で囲む | ✅ |
+| ファイル読込 | ローカルの \`.md\` ファイルをインポート | ✅ |
+
+---
+
+## 引用ブロック
+
+> 「シンプルであることは、複雑であることよりも難しい。物事をシンプルにするためには、思考を研ぎ澄まさなければならない。」
+> — スティーブ・ジョブズ
+
+自由に編集して、快適なライティングをお楽しみください！
+`;
+
+    // UML / Mermaid 図表テンプレート集
+    const DIAGRAM_TEMPLATES = {
+      flowchart: `${FENCE}mermaid\nflowchart TD\n    Start([開始]) --> Process[処理を実行]\n    Process --> Condition{条件分岐}\n    Condition -- Yes --> Success[完了]\n    Condition -- No --> Retry[再試行]\n    Retry --> Process\n${FENCE}`,
+      sequence: `${FENCE}mermaid\nsequenceDiagram\n    participant Client as クライアント\n    participant Server as サーバー\n    participant DB as データベース\n\n    Client->>Server: リクエスト送信\n    Server->>DB: データ照会\n    DB-->>Server: 結果返却\n    Server-->>Client: レスポンス返却\n${FENCE}`,
+      class: `${FENCE}mermaid\nclassDiagram\n    class User {\n        +String id\n        +String name\n        +login()\n    }\n    class Document {\n        +String title\n        +String content\n        +save()\n    }\n    User "1" --> "*" Document : 作成する\n${FENCE}`,
+      state: `${FENCE}mermaid\nstateDiagram-v2\n    [*] --> 下書き\n    下書き --> レビュー中 : 提出\n    レビュー中 --> 下書き : 差し戻し\n    レビュー中 --> 公開済 : 承認\n    公開済 --> [*]\n${FENCE}`,
+      er: `${FENCE}mermaid\nerDiagram\n    USER ||--o{ ORDER : places\n    ORDER ||--|{ ORDER_ITEM : contains\n    PRODUCT ||--o{ ORDER_ITEM : "ordered in"\n\n    USER {\n        string id PK\n        string name\n        string email\n    }\n    ORDER {\n        string id PK\n        date created_at\n    }\n${FENCE}`,
+      gantt: `${FENCE}mermaid\ngantt\n    title プロジェクト進行スケジュール\n    dateFormat  YYYY-MM-DD\n    section 設計\n    要件定義       :a1, 2026-01-01, 7d\n    UI/UXデザイン  :after a1, 5d\n    section 開発\n    実装フェーズ   :2026-01-13, 14d\n    テスト・公開   :5d\n${FENCE}`,
+    };
+
+    // DOM要素の参照
+    const markdownInput = document.getElementById('markdownInput');
+    const markdownPreview = document.getElementById('markdownPreview');
+    const previewScrollContainer = document.getElementById('previewScrollContainer');
+    const editorPane = document.getElementById('editorPane');
+    const previewPane = document.getElementById('previewPane');
+    const editorToolbar = document.getElementById('editorToolbar');
+    const docTitleInput = document.getElementById('docTitleInput');
+    const saveStatus = document.getElementById('saveStatus');
+    const diagramMenu = document.getElementById('diagramMenu');
+    const diagramMenuBtn = document.getElementById('diagramMenuBtn');
+    const exportMenu = document.getElementById('exportMenu');
+    const exportMenuContainer = document.getElementById('exportMenuContainer');
+
+    // 状態変数
+    let currentViewMode = window.innerWidth < 768 ? 'editor' : 'split';
+    let isSyncScrollEnabled = true;
+    let isSyncingLeft = false;
+    let isSyncingRight = false;
+    let pendingModalAction = null;
+    let hasPendingMermaidRender = false;
+    let mermaidRenderCounter = 0;
+    let saveTimer = null;
+
+    const STORAGE_KEY_CONTENT = 'markflow_content_v1';
+    const STORAGE_KEY_TITLE = 'markflow_title_v1';
+    const STORAGE_KEY_THEME = 'markflow_theme_v1';
+
+    /**
+     * テーマの初期化 (localStorage または OS設定を参照)
+     */
+    function initTheme() {
+      try {
+        const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+        document.documentElement.classList.toggle('dark', isDark);
+        updateThemeIcons(isDark);
+      } catch (e) {
+        updateThemeIcons(false);
+      }
+    }
+
+    /**
+     * テーマアイコンの表示切替
+     */
+    function updateThemeIcons(isDark) {
+      const sunIcon = document.getElementById('sunIcon');
+      const moonIcon = document.getElementById('moonIcon');
+      if (sunIcon && moonIcon) {
+        sunIcon.classList.toggle('hidden', !isDark);
+        moonIcon.classList.toggle('hidden', isDark);
+      }
+    }
+
+    /**
+     * ライト / ダークモード切替
+     */
+    function toggleTheme() {
+      const isDark = !document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('dark', isDark);
+      updateThemeIcons(isDark);
+      try {
+        localStorage.setItem(STORAGE_KEY_THEME, isDark ? 'dark' : 'light');
+      } catch (e) {
+        // ストレージ制限時は無視
+      }
+      configureMermaidTheme();
+      renderMarkdown();
+    }
+
+    /**
+     * Marked.js & Mermaid.js の初期設定
+     */
+    function initMarkdownParser() {
+      if (typeof marked !== 'undefined') {
+        marked.setOptions({
+          gfm: true,
+          breaks: true,
+        });
+      }
+      configureMermaidTheme();
+    }
+
+    /**
+     * 現在のライト/ダークテーマに合わせてMermaidを設定
+     */
+    function configureMermaidTheme() {
+      if (typeof mermaid !== 'undefined') {
+        const isDark = document.documentElement.classList.contains('dark');
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: isDark ? 'dark' : 'default',
+          securityLevel: 'loose',
+          fontFamily: '"Inter", "Noto Sans JP", sans-serif',
+          flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+          },
+        });
+      }
+    }
+
+    /**
+     * Markdownテキストをパースし、サニタイズしてプレビューへ反映
+     */
+    async function renderMarkdown() {
+      const rawMarkdown = markdownInput.value || '';
+      updateStats(rawMarkdown);
+
+      try {
+        const parsedHtml = typeof marked !== 'undefined'
+          ? marked.parse(rawMarkdown)
+          : rawMarkdown.replace(/</g, '&lt;').replace(/\n/g, '<br>');
+
+        const cleanHtml = typeof DOMPurify !== 'undefined'
+          ? DOMPurify.sanitize(parsedHtml, {
+              ADD_TAGS: ['input'],
+              ADD_ATTR: ['type', 'checked', 'disabled'],
+            })
+          : parsedHtml;
+
+        markdownPreview.innerHTML = cleanHtml;
+
+        // コードブロックのシンタックスハイライト (mermaid以外)
+        if (typeof hljs !== 'undefined') {
+          markdownPreview.querySelectorAll('pre code').forEach((block) => {
+            if (!block.classList.contains('language-mermaid')) {
+              hljs.highlightElement(block);
+            }
+          });
+        }
+
+        // 外部リンクを新しいタブで開く設定
+        markdownPreview.querySelectorAll('a[href^="http"]').forEach((link) => {
+          link.setAttribute('target', '_blank');
+          link.setAttribute('rel', 'noopener noreferrer');
+        });
+
+        // Mermaidダイアグラム描画
+        await renderMermaidDiagrams();
+      } catch (err) {
+        console.error('Markdown rendering error:', err);
+      }
+    }
+
+    /**
+     * プレビュー内の mermaid ブロックをSVG図表へ変換
+     */
+    async function renderMermaidDiagrams() {
+      if (typeof mermaid === 'undefined') return;
+
+      const mermaidBlocks = markdownPreview.querySelectorAll('pre code.language-mermaid');
+      if (mermaidBlocks.length === 0) {
+        hasPendingMermaidRender = false;
+        return;
+      }
+
+      // プレビューペインが非表示(display: none)の状態で描画するとSVGの寸法計算が0になり
+      // "Could not find a suitable point for the given distance" エラーが発生するため表示時まで遅延させる
+      if (previewPane.classList.contains('hidden') || previewPane.offsetParent === null || previewPane.clientWidth === 0) {
+        hasPendingMermaidRender = true;
+        return;
+      }
+
+      hasPendingMermaidRender = false;
+
+      for (let i = 0; i < mermaidBlocks.length; i++) {
+        const codeEl = mermaidBlocks[i];
+        const preEl = codeEl.parentElement;
+        const graphDefinition = codeEl.textContent.trim();
+
+        if (!graphDefinition) continue;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mermaid-wrapper my-6 p-4 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs';
+        const renderId = `mermaid-svg-${++mermaidRenderCounter}-${i}`;
+
+        try {
+          // 入力途中の不完全な構文を事前検証
+          await mermaid.parse(graphDefinition);
+
+          // 独立したIDでSVGを生成して挿入
+          const { svg } = await mermaid.render(renderId, graphDefinition);
+          const diagramContainer = document.createElement('div');
+          diagramContainer.className = 'mermaid min-w-fit flex justify-center';
+          diagramContainer.innerHTML = svg;
+          wrapper.appendChild(diagramContainer);
+          preEl.replaceWith(wrapper);
+        } catch (parseError) {
+          // Mermaidがbody直下に一時生成するエラー要素があれば除去
+          const orphanErrorEl = document.getElementById(`d${renderId}`);
+          if (orphanErrorEl) orphanErrorEl.remove();
+
+          // 構文エラー時は控えめなステータス表示に留める
+          wrapper.className = 'my-6 p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300';
+          wrapper.innerHTML = `
+            <div class="font-semibold flex items-center gap-1.5 mb-1">
+              <span>⚠️ Mermaid ダイアグラム構文チェック中</span>
+            </div>
+            <div class="font-mono text-[11px] opacity-80 whitespace-pre-wrap">${(parseError.message || '構文を確認してください').replace(/</g, '&lt;')}</div>
+          `;
+          preEl.replaceWith(wrapper);
+        }
+      }
+    }
+
+    /**
+     * 文字数・行数・読了目安時間の更新
+     */
+    function updateStats(text) {
+      const charCountEl = document.getElementById('charCount');
+      const lineCountEl = document.getElementById('lineCount');
+      const readTimeEl = document.getElementById('readTime');
+
+      const chars = text.length;
+      const lines = text === '' ? 0 : text.split('\n').length;
+      const minutes = Math.max(1, Math.ceil(chars / 500));
+
+      if (charCountEl) charCountEl.textContent = chars.toLocaleString();
+      if (lineCountEl) lineCountEl.textContent = lines.toLocaleString();
+      if (readTimeEl) readTimeEl.textContent = minutes.toLocaleString();
+    }
+
+    /**
+     * ローカルストレージへの自動保存
+     */
+    function scheduleAutoSave() {
+      if (saveStatus) {
+        saveStatus.textContent = '保存中...';
+      }
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY_CONTENT, markdownInput.value);
+          localStorage.setItem(STORAGE_KEY_TITLE, docTitleInput.value || 'README.md');
+          if (saveStatus) {
+            saveStatus.textContent = '自動保存済';
+          }
+        } catch (e) {
+          if (saveStatus) {
+            saveStatus.textContent = '未保存';
+          }
+        }
+      }, 400);
+    }
+
+    /**
+     * ローカルストレージから前回の内容を読み込み
+     */
+    function loadFromLocalStorage() {
+      try {
+        const savedContent = localStorage.getItem(STORAGE_KEY_CONTENT);
+        const savedTitle = localStorage.getItem(STORAGE_KEY_TITLE);
+
+        markdownInput.value = savedContent !== null ? savedContent : SAMPLE_MARKDOWN;
+        if (savedTitle) {
+          docTitleInput.value = savedTitle;
+        }
+      } catch (e) {
+        markdownInput.value = SAMPLE_MARKDOWN;
+      }
+    }
+
+    /**
+     * 表示モード切替 (split / editor / preview)
+     */
+    function setViewMode(mode) {
+      if (window.innerWidth < 768 && mode === 'split') {
+        mode = 'editor';
+      }
+      currentViewMode = mode;
+
+      // ボタンのアクティブ状態更新
+      document.querySelectorAll('.view-mode-btn').forEach((btn) => {
+        const isActive = btn.dataset.mode === mode;
+        btn.classList.toggle('bg-white', isActive);
+        btn.classList.toggle('dark:bg-slate-700', isActive);
+        btn.classList.toggle('text-indigo-600', isActive);
+        btn.classList.toggle('dark:text-indigo-300', isActive);
+        btn.classList.toggle('shadow-xs', isActive);
+        btn.classList.toggle('text-slate-600', !isActive);
+        btn.classList.toggle('dark:text-slate-300', !isActive);
+      });
+
+      // ペインの表示制御
+      if (mode === 'split') {
+        editorPane.classList.remove('hidden');
+        previewPane.classList.remove('hidden');
+        editorToolbar.classList.remove('hidden');
+        if (hasPendingMermaidRender) {
+          requestAnimationFrame(() => renderMarkdown());
+        }
+      } else if (mode === 'editor') {
+        editorPane.classList.remove('hidden');
+        previewPane.classList.add('hidden');
+        editorToolbar.classList.remove('hidden');
+        markdownInput.focus();
+      } else if (mode === 'preview') {
+        editorPane.classList.add('hidden');
+        previewPane.classList.remove('hidden');
+        editorToolbar.classList.add('hidden');
+        if (hasPendingMermaidRender) {
+          requestAnimationFrame(() => renderMarkdown());
+        }
+      }
+    }
+
+    /**
+     * スクロール同期のON/OFF切替
+     */
+    function toggleSyncScroll() {
+      isSyncScrollEnabled = !isSyncScrollEnabled;
+      const btn = document.getElementById('syncScrollBtn');
+      if (btn) {
+        btn.classList.toggle('bg-indigo-50', isSyncScrollEnabled);
+        btn.classList.toggle('text-indigo-700', isSyncScrollEnabled);
+        btn.classList.toggle('dark:bg-indigo-950/70', isSyncScrollEnabled);
+        btn.classList.toggle('dark:text-indigo-300', isSyncScrollEnabled);
+        btn.classList.toggle('border-indigo-200/60', isSyncScrollEnabled);
+        btn.classList.toggle('dark:border-indigo-800/60', isSyncScrollEnabled);
+
+        btn.classList.toggle('text-slate-500', !isSyncScrollEnabled);
+        btn.classList.toggle('dark:text-slate-400', !isSyncScrollEnabled);
+        btn.classList.toggle('border-transparent', !isSyncScrollEnabled);
+      }
+      showToast(isSyncScrollEnabled ? 'スクロール同期をオンにしました' : 'スクロール同期をオフにしました');
+    }
+
+    /**
+     * 選択テキストを前後の記号で囲む
+     */
+    function wrapSelection(prefix, suffix, placeholder) {
+      const start = markdownInput.selectionStart;
+      const end = markdownInput.selectionEnd;
+      const value = markdownInput.value;
+      const selectedText = value.substring(start, end) || placeholder;
+      const replacement = `${prefix}${selectedText}${suffix}`;
+
+      markdownInput.focus();
+      markdownInput.setRangeText(replacement, start, end, 'select');
+      markdownInput.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
+
+      renderMarkdown();
+      scheduleAutoSave();
+    }
+
+    /**
+     * カーソル行の先頭にプレフィックスを挿入
+     */
+    function insertLinePrefix(prefix) {
+      const start = markdownInput.selectionStart;
+      const value = markdownInput.value;
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+
+      markdownInput.focus();
+      markdownInput.setRangeText(prefix, lineStart, lineStart, 'end');
+
+      renderMarkdown();
+      scheduleAutoSave();
+    }
+
+    /**
+     * ブロックテキストをカーソル位置に挿入
+     */
+    function insertBlockText(text, scrollAfter = false) {
+      const start = markdownInput.selectionStart;
+      const end = markdownInput.selectionEnd;
+      const value = markdownInput.value;
+
+      const needsLeadingNewline = start > 0 && value[start - 1] !== '\n';
+      const insertion = `${needsLeadingNewline ? '\n\n' : '\n'}${text}\n`;
+
+      markdownInput.focus();
+      markdownInput.setRangeText(insertion, start, end, 'end');
+
+      renderMarkdown();
+      scheduleAutoSave();
+
+      if (scrollAfter) {
+        requestAnimationFrame(() => {
+          markdownInput.scrollTop = markdownInput.scrollHeight;
+          if (!previewPane.classList.contains('hidden')) {
+            previewScrollContainer.scrollTop = previewScrollContainer.scrollHeight;
+          }
+        });
+      }
+    }
+
+    /**
+     * コードブロックの挿入
+     */
+    function insertCodeBlock() {
+      insertBlockText(`${FENCE}javascript\n// ここにコードを入力\n${FENCE}`);
+    }
+
+    /**
+     * テーブルの挿入
+     */
+    function insertTable() {
+      const tableTemplate = [
+        '| 列1 | 列2 | 列3 |',
+        '| :--- | :---: | ---: |',
+        '| 内容1 | 内容2 | 内容3 |',
+        '| 内容4 | 内容5 | 内容6 |',
+      ].join('\n');
+      insertBlockText(tableTemplate);
+    }
+
+    /**
+     * UML図ドロップダウンの表示位置調整と開閉
+     */
+    function positionDiagramMenu() {
+      if (!diagramMenuBtn || !diagramMenu) return;
+      const rect = diagramMenuBtn.getBoundingClientRect();
+      const menuWidth = 240;
+      const left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
+      diagramMenu.style.top = `${rect.bottom + 6}px`;
+      diagramMenu.style.left = `${Math.max(12, left)}px`;
+    }
+
+    function toggleDiagramMenu(forceState) {
+      if (!diagramMenu) return;
+      const shouldShow = typeof forceState === 'boolean'
+        ? forceState
+        : diagramMenu.classList.contains('hidden');
+
+      if (shouldShow) {
+        toggleExportMenu(false);
+        positionDiagramMenu();
+        diagramMenu.classList.remove('hidden');
+      } else {
+        diagramMenu.classList.add('hidden');
+      }
+    }
+
+    /**
+     * 選択されたMermaid図表テンプレートを挿入
+     */
+    function insertDiagramTemplate(type) {
+      toggleDiagramMenu(false);
+      const template = DIAGRAM_TEMPLATES[type];
+      if (!template) return;
+
+      // モバイルでプレビューのみ表示中の場合は編集モードへ切り替え
+      if (currentViewMode === 'preview' && window.innerWidth < 768) {
+        setViewMode('editor');
+      }
+
+      insertBlockText(template, true);
+      showToast('UML・ダイアグラムのテンプレートを挿入しました');
+    }
+
+    /**
+     * エクスポートメニューの開閉
+     */
+    function toggleExportMenu(forceState) {
+      if (!exportMenu) return;
+      const shouldShow = typeof forceState === 'boolean'
+        ? forceState
+        : exportMenu.classList.contains('hidden');
+
+      if (shouldShow) {
+        toggleDiagramMenu(false);
+        exportMenu.classList.remove('hidden');
+      } else {
+        exportMenu.classList.add('hidden');
+      }
+    }
+
+    /**
+     * クリップボードへのコピー (iFrame環境でも動作する execCommand を使用)
+     */
+    function copyToClipboard(text, successMessage) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const ok = document.execCommand('copy');
+        if (ok) {
+          showToast(successMessage);
+        } else {
+          showToast('コピーに失敗しました', 'error');
+        }
+      } catch (err) {
+        showToast('コピーに失敗しました', 'error');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function copyMarkdownSource() {
+      copyToClipboard(markdownInput.value, 'Markdownソースをコピーしました');
+    }
+
+    function copyRenderedHtml() {
+      copyToClipboard(markdownPreview.innerHTML, '変換後のHTMLをコピーしました');
+    }
+
+    /**
+     * ファイルダウンロード共通処理
+     */
+    function triggerDownload(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function getSanitizedBaseFilename() {
+      const raw = (docTitleInput.value || 'README.md').trim();
+      return raw.replace(/\.[^/.]+$/, '') || 'document';
+    }
+
+    function downloadMarkdown() {
+      const baseName = getSanitizedBaseFilename();
+      triggerDownload(markdownInput.value, `${baseName}.md`, 'text/markdown;charset=utf-8');
+      showToast(`${baseName}.md をダウンロードしました`);
+    }
+
+    function downloadHtml() {
+      const baseName = getSanitizedBaseFilename();
+      const fullHtml = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${baseName}</title>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+</head>
+<body class="bg-slate-50 text-slate-800 py-10 px-4">
+  <article class="prose prose-slate max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+    ${markdownPreview.innerHTML}
+  </article>
+</body>
+</html>`;
+      triggerDownload(fullHtml, `${baseName}.html`, 'text/html;charset=utf-8');
+      showToast(`${baseName}.html をダウンロードしました`);
+    }
+
+    /**
+     * ローカルのMarkdownファイル読み込み
+     */
+    function handleFileImport(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        markdownInput.value = e.target.result || '';
+        docTitleInput.value = file.name;
+        renderMarkdown();
+        scheduleAutoSave();
+        showToast(`「${file.name}」を読み込みました`);
+      };
+      reader.readAsText(file, 'UTF-8');
+      event.target.value = '';
+    }
+
+    /**
+     * カスタム確認モーダル制御 (confirm()代替)
+     */
+    function openConfirmModal(title, message, onConfirm, isDanger = false) {
+      const modal = document.getElementById('confirmModal');
+      const titleEl = document.getElementById('modalTitle');
+      const msgEl = document.getElementById('modalMessage');
+      const confirmBtn = document.getElementById('modalConfirmBtn');
+
+      if (!modal || !titleEl || !msgEl || !confirmBtn) return;
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      pendingModalAction = onConfirm;
+
+      confirmBtn.className = isDanger
+        ? 'px-4 py-2 rounded-xl text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition-colors'
+        : 'px-4 py-2 rounded-xl text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors';
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirmModal');
+      if (modal) modal.classList.add('hidden');
+      pendingModalAction = null;
+    }
+
+    function confirmResetSample() {
+      openConfirmModal(
+        'サンプルに戻す',
+        '現在の編集内容をサンプルのMarkdownに置き換えます。よろしいですか？',
+        () => {
+          markdownInput.value = SAMPLE_MARKDOWN;
+          docTitleInput.value = 'README.md';
+          renderMarkdown();
+          scheduleAutoSave();
+          showToast('サンプルドキュメントに戻しました');
+        }
+      );
+    }
+
+    function confirmClearEditor() {
+      openConfirmModal(
+        'エディタをクリア',
+        '入力されているすべての内容を消去します。この操作は元に戻せません。',
+        () => {
+          markdownInput.value = '';
+          renderMarkdown();
+          scheduleAutoSave();
+          markdownInput.focus();
+          showToast('エディタをクリアしました');
+        },
+        true
+      );
+    }
+
+    /**
+     * トースト通知表示 (alert()代替)
+     */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const bgClass = type === 'error'
+        ? 'bg-rose-600 text-white'
+        : 'bg-slate-900 dark:bg-slate-800 text-white border border-slate-700/80';
+
+      toast.className = `${bgClass} px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 transition-all duration-200 transform translate-y-2 opacity-0`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 200);
+      }, 2400);
+    }
+
+    // ==================== イベントリスナー登録 ====================
+
+    // 確認モーダルの実行ボタン
+    document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+      if (typeof pendingModalAction === 'function') {
+        pendingModalAction();
+      }
+      closeConfirmModal();
+    });
+
+    // エディタ入力イベント
+    markdownInput.addEventListener('input', () => {
+      renderMarkdown();
+      scheduleAutoSave();
+    });
+
+    // ドキュメント名変更イベント
+    docTitleInput.addEventListener('input', () => {
+      scheduleAutoSave();
+    });
+
+    // Tabキーでスペース2つ挿入
+    markdownInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = markdownInput.selectionStart;
+        const end = markdownInput.selectionEnd;
+        markdownInput.setRangeText('  ', start, end, 'end');
+        renderMarkdown();
+        scheduleAutoSave();
+      }
+    });
+
+    // 左右ペインのスクロール同期
+    markdownInput.addEventListener('scroll', () => {
+      if (!isSyncScrollEnabled || isSyncingLeft || currentViewMode !== 'split') return;
+      const maxEditorScroll = markdownInput.scrollHeight - markdownInput.clientHeight;
+      if (maxEditorScroll <= 0) return;
+
+      isSyncingRight = true;
+      const ratio = markdownInput.scrollTop / maxEditorScroll;
+      const maxPreviewScroll = previewScrollContainer.scrollHeight - previewScrollContainer.clientHeight;
+      previewScrollContainer.scrollTop = ratio * maxPreviewScroll;
+      requestAnimationFrame(() => { isSyncingRight = false; });
+    });
+
+    previewScrollContainer.addEventListener('scroll', () => {
+      if (!isSyncScrollEnabled || isSyncingRight || currentViewMode !== 'split') return;
+      const maxPreviewScroll = previewScrollContainer.scrollHeight - previewScrollContainer.clientHeight;
+      if (maxPreviewScroll <= 0) return;
+
+      isSyncingLeft = true;
+      const ratio = previewScrollContainer.scrollTop / maxPreviewScroll;
+      const maxEditorScroll = markdownInput.scrollHeight - markdownInput.clientHeight;
+      markdownInput.scrollTop = ratio * maxEditorScroll;
+      requestAnimationFrame(() => { isSyncingLeft = false; });
+    });
+
+    // ドロップダウン外クリックでメニューを閉じる
+    document.addEventListener('click', (e) => {
+      if (exportMenuContainer && !exportMenuContainer.contains(e.target)) {
+        toggleExportMenu(false);
+      }
+      if (diagramMenu && diagramMenuBtn && !diagramMenu.contains(e.target) && !diagramMenuBtn.contains(e.target)) {
+        toggleDiagramMenu(false);
+      }
+    });
+
+    // ウィンドウリサイズ時の表示モード・メニュー位置調整
+    window.addEventListener('resize', () => {
+      if (diagramMenu && !diagramMenu.classList.contains('hidden')) {
+        positionDiagramMenu();
+      }
+      if (window.innerWidth < 768 && currentViewMode === 'split') {
+        setViewMode('editor');
+      } else if (window.innerWidth >= 768 && hasPendingMermaidRender) {
+        requestAnimationFrame(() => renderMarkdown());
+      }
+    });
+
+    // 初期化実行
+    window.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      initMarkdownParser();
+      loadFromLocalStorage();
+      setViewMode(currentViewMode);
+
+      // Webフォント読み込み完了を待ってから初回描画（SVGラベル寸法の誤差を防止）
+      if (document.fonts && document.fonts.ready) {
+        await Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => setTimeout(resolve, 400)),
+        ]);
+      }
+      renderMarkdown();
+    });
+  </script>
+</body>
+</html>
